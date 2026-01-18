@@ -3,8 +3,7 @@ import random
 import math
 import sys
 import os
-from dungeons import dun_250
-from dungeon_2 import dun_2
+from dungeons import *
 from test_fight import *
 
 # Константы для меню
@@ -14,20 +13,9 @@ TITLE = "Игра с меню и спрайтами"
 TILE_SIZE = 64
 PLAYER_SPEED = 10
 
-dung_num = random.randint(0, 1)
-dun = [dun_250, dun_2][dung_num]
-
 # Предопределенная карта (координаты квадратов)
-PREDEFINED_MAP = {
-    "name": "Предопределенная карта",
-    "world_width": TILE_SIZE * 250,  # 12500
-    "world_height": TILE_SIZE * 250,  # 12500
-    "player_start": [TILE_SIZE * [125, 67][dung_num], TILE_SIZE * 1],  # Центр
-    "squares": [
-        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
-        in range(len(dun[y])) if dun[y][x] == '*'
-    ]
-}
+DUNGEON_MAP = {}
+dun = None
 LIST_POSESH = []
 
 
@@ -181,7 +169,6 @@ class GameView(arcade.View):
 
     def __init__(self, x, y):
         super().__init__()
-
         self.x = x
         self.y = y
 
@@ -249,14 +236,14 @@ class GameView(arcade.View):
             self._background_texture = None
             try:
                 if os.path.exists("images/tiles/fire_land.jpg"):
-                    self._background_texture = arcade.load_texture("images/tiles/magma_1.jpg")
+                    self._background_texture = arcade.load_texture("images/tiles/fire_land.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
             self._room_texture = None
             try:
                 if os.path.exists("images/tiles/magma_2.jpg"):
-                    self._room_texture = arcade.load_texture("images/tiles/magma_2.jpg")
+                    self._room_texture = arcade.load_texture("images/tiles/burned_land.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
@@ -274,7 +261,7 @@ class GameView(arcade.View):
         self.player_sprite = Player()
 
         # Устанавливаем позицию игрока
-        player_start = PREDEFINED_MAP.get('player_start', [self.world_width / 2, self.world_height / 2])
+        player_start = DUNGEON_MAP.get('player_start', [self.world_width / 2, self.world_height / 2])
         self.player_sprite.center_x = self.x
         self.player_sprite.center_y = self.y
 
@@ -344,7 +331,7 @@ class GameView(arcade.View):
         print("Начало загрузки карты...")
 
         # Используем батчинг для быстрого создания спрайтов
-        squares_data = PREDEFINED_MAP.get('squares', [])
+        squares_data = DUNGEON_MAP.get('squares', [])
 
         # Создаем спрайты партиями для производительности
         batch_size = 1000
@@ -372,7 +359,7 @@ class GameView(arcade.View):
 
         # Создаем набор координат стен для быстрой проверки
         wall_coords = set()
-        squares_data = PREDEFINED_MAP.get('squares', [])
+        squares_data = DUNGEON_MAP.get('squares', [])
         for x, y in squares_data:
             grid_x = x // TILE_SIZE
             grid_y = y // TILE_SIZE
@@ -423,7 +410,7 @@ class GameView(arcade.View):
 
         # Создаем набор координат стен для быстрой проверки
         wall_coords = set()
-        squares_data = PREDEFINED_MAP.get('squares', [])
+        squares_data = DUNGEON_MAP.get('squares', [])
         for x, y in squares_data:
             grid_x = x // TILE_SIZE
             grid_y = y // TILE_SIZE
@@ -759,7 +746,6 @@ class GameView(arcade.View):
             self.block_direction = 'top'
 
         # Проверяем, находится ли игрок на клетке комнаты
-        print(self._check_room_collision())
         if self._check_room_collision()[0] and self._check_room_collision()[1] not in LIST_POSESH:
             print("Игрок вошел в комнату! Запуск карточной игры...")
             for dx in range(-8, 9):
@@ -1203,7 +1189,23 @@ class MenuView(arcade.View):
     """Класс для экрана меню"""
 
     def __init__(self, background_texture=None):
+        global DUNGEON_MAP
+        global dun
         super().__init__()
+
+        dung = random_dun()
+        dun = dung['dungeon']
+        DUNGEON_MAP = {
+            "name": dung['name'],
+            "world_width": TILE_SIZE * 250,  # 16000
+            "world_height": TILE_SIZE * 250,  # 16000
+            "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
+            "squares": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '*'
+            ]
+        }
+
         self.background_texture = background_texture
         self.buttons = []
         self.status_text = ""
@@ -1327,7 +1329,7 @@ class MenuView(arcade.View):
                     if btn.text == "Начать игру":
                         self.status_text = "Загрузка игры..."
                         # Создаем и показываем игровой экран с предопределенной картой
-                        x, y = PREDEFINED_MAP['player_start']
+                        x, y = DUNGEON_MAP['player_start']
                         game_view = GameView(x, y)
                         self.window.show_view(game_view)
 
