@@ -1,5 +1,7 @@
 import arcade
 import random
+from cards_test_1 import *
+from defence_cards import *
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TITLE = "Карточная игра"
@@ -16,7 +18,8 @@ class Card:
                  text_color=arcade.color.BLACK,
                  description_color=arcade.color.DARK_GRAY,
                  font_size=14,
-                 description_font_size=8):
+                 description_font_size=7,
+                 dict=None):
 
         # Координаты и размеры
         self.x = x
@@ -32,6 +35,7 @@ class Card:
         self.description_color = description_color
         self.font_size = font_size
         self.description_font_size = description_font_size
+        self.dict = dict
 
         # Параметры для анимации выдвижения
         self.normal_y = y  # Обычная позиция карты (внизу)
@@ -65,24 +69,31 @@ class Card:
         self.current_title_y = self.title_y_collapsed
 
         # Позиция для описания (внизу карты)
-        self.description_y = self.current_y
+        self.description_y = self.current_y + 30
 
         # Создаем текстовый объект для названия
-        self.text_obj = arcade.Text(
-            text,
-            self.x,
-            self.current_title_y,
-            text_color,
-            font_size,
-            anchor_x="center",
-            anchor_y="center",
-            bold=True
-        )
+        self.text_obj = []
+        for p, t in enumerate(self.text.split('/')):
+            self.text_obj.append(arcade.Text(
+                t,
+                self.x,
+                self.current_title_y + 7 - 14 * p,
+                text_color,
+                font_size,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            ))
 
         # Создаем текстовый объект для описания
-        self.desc = [arcade.Text(i, self.x - 60, self.description_y - p * 12, description_color, description_font_size,
-                                 width * 0.8)
-                     for p, i in enumerate(description.split('/'))]
+        self.desc = []
+        for p, i in enumerate(description.split('/')):
+            self.desc.append(arcade.Text(
+                i, self.x - 60,
+                self.description_y + 100 - p * 12,
+                description_color, description_font_size,
+                width * 0.8
+            ))
 
         # Свойства карты
         self.is_active = True
@@ -90,6 +101,7 @@ class Card:
         self.is_visible = True
         self.is_hovered = False
         self.is_pressed = False
+        self.is_mana = False
 
         # Обновляем прямоугольник для коллизий (только для видимой части)
         self.rect = arcade.rect.XYWH(x, self.current_y, width, self.visible_height)
@@ -125,9 +137,10 @@ class Card:
                                      self.visible_height if not self.is_hovered else self.height)
 
         # Обновляем позиции текстовых объектов
-        self.text_obj.y = self.current_title_y
+        for p, i in enumerate(self.text_obj):
+            i.y = self.current_title_y + 7 - p * 14
         for p, i in enumerate(self.desc):
-            i.y = self.current_y - 30 - p * 12
+            i.y = self.current_y - 7 - p * 12
 
     def draw(self):
         """Отрисовывает карту с учетом состояния"""
@@ -161,8 +174,8 @@ class Card:
                 try:
                     # Создаем прямоугольник для изображения с центром над картой
                     image_rect = arcade.rect.XYWH(
-                        self.x,
-                        self.current_y + 30,
+                        self.x - 20,
+                        self.current_y + 40,
                         self.image_size,
                         self.image_size
                     )
@@ -177,6 +190,21 @@ class Card:
             else:
                 # Рисуем заполнитель для пустой карты
                 self._draw_placeholder_image(True)
+
+            try:
+                mana_color = arcade.color.BLUE if not self.is_playable else arcade.color.DARK_BLUE
+                arcade.draw_text(
+                    f"⚡{self.dict['mana']}",
+                    self.x + 30,
+                    self.current_y + 40,
+                    mana_color,
+                    10,  # Уменьшенный размер
+                    anchor_x="center",
+                    anchor_y="center",
+                    bold=True
+                )
+            except:
+                print('Ошибка в мане карты')
 
             # Рисуем описание карты
             for i in self.desc:
@@ -197,7 +225,8 @@ class Card:
             arcade.draw_rect_outline(visible_rect, border_color, border_width=2)
 
         # Рисуем название карты (всегда видно, но позиция меняется)
-        self.text_obj.draw()
+        for i in self.text_obj:
+            i.draw()
 
         # Показываем статус "неиграбельной" карты
         if not self.is_playable and self.is_hovered:
@@ -218,7 +247,7 @@ class Card:
             return
 
         # Рисуем квадрат для изображения
-        image_rect = arcade.rect.XYWH(self.x, self.current_y + 30, self.image_size, self.image_size)
+        image_rect = arcade.rect.XYWH(self.x - 20, self.current_y + 40, self.image_size - 20, self.image_size - 20)
 
         # Рисуем заливку квадрата
         arcade.draw_rect_filled(image_rect, arcade.color.LIGHT_BLUE)
@@ -229,7 +258,7 @@ class Card:
         # Рисуем текст "Изображение"
         arcade.draw_text(
             "Изобр.",
-            self.x,
+            self.x - 20,
             self.current_y + 30,
             arcade.color.BLACK,
             10,
@@ -251,7 +280,7 @@ class Card:
         self.description = new_description
         # Обновляем список текстовых объектов
         self.desc = [
-            arcade.Text(i, self.x - 60, self.description_y - p * 12, self.description_color, self.description_font_size,
+            arcade.Text(i, self.x - 60, self.description_y + 100 - p * 12, self.description_color, self.description_font_size,
                         self.width * 0.8)
             for p, i in enumerate(new_description.split('/'))]
 
@@ -286,6 +315,9 @@ class Mob:
         self.y = y
         self.width = width
         self.height = height
+
+        self.current = 0
+        self.last_damage_position = (x, y)
 
         # Загрузка изображения моба
         self.image = None
@@ -410,11 +442,12 @@ class Mob:
 
     def draw_name(self):
         """Отрисовка имени моба"""
+        color = arcade.color.WHITE if self.current == 0 else arcade.color.RED
         arcade.draw_text(
             self.name,
             self.x,
             self.y - self.height // 2 - 15,
-            arcade.color.WHITE,
+            color,
             10,  # Уменьшенный шрифт
             anchor_x="center",
             anchor_y="center",
@@ -444,6 +477,16 @@ class Mob:
             self.current_hp += amount
             if self.current_hp > self.max_hp:
                 self.current_hp = self.max_hp
+
+    def check_mouse_hover(self, x, y):
+        self.is_hovered = (
+                self.x - self.width // 2 <= x <= self.x + self.width // 2 and
+                self.y - self.height // 2 <= y <= self.y + self.height // 2
+        )
+        return self.is_hovered
+
+    def on_press(self):
+        self.current = 1
 
 
 class Slime(Mob):
@@ -592,6 +635,15 @@ class Slime(Mob):
             "alive": self.is_alive
         }
 
+    def take_damage(self, damage):
+        self.last_damage_position = (self.x + random.randrange(-10, 10), self.y + random.randrange(-10, 10))
+        survived = super().take_damage(damage)
+        return survived
+
+    def get_damage_position(self):
+        """Возвращает позицию для отображения урона"""
+        return self.last_damage_position
+
 
 class Fight_player:
     """Класс для представления игрока"""
@@ -617,15 +669,16 @@ class Fight_player:
         self.image_y = 300  # Выше центра
         self.image_width = 125  # Увеличенный размер
         self.image_height = 165  # Увеличенный размер
+        self.last_damage_position = (self.image_x, self.image_y)
 
         # Параметры для отображения здоровья (левый верхний угол)
         self.heart_x = 80  # Позиция сердца в левом углу
-        self.heart_y = 500  # Вверху экрана
+        self.heart_y = 520  # Вверху экрана
         self.heart_size = 90  # Уменьшенный на 10% (было 100)
 
         # Параметры для отображения маны (под сердцем в левом углу)
         self.mana_diamonds_x = self.heart_x  # Под сердцем
-        self.mana_diamonds_y = self.heart_y - 65  # Ближе к сердцу
+        self.mana_diamonds_y = self.heart_y - 85  # Ближе к сердцу
         self.diamond_size = 22  # Уменьшенный на 10% (было 25)
         self.diamond_spacing = 27  # Уменьшенный на 10% (было 30)
 
@@ -818,7 +871,7 @@ class Fight_player:
         arcade.draw_text(
             self.name,
             self.heart_x,
-            self.heart_y + 45,  # Над сердцем
+            self.heart_y + 65,  # Над сердцем
             arcade.color.GOLD,
             20,  # Уменьшенный шрифт
             anchor_x="center",
@@ -828,13 +881,19 @@ class Fight_player:
 
     def take_damage(self, damage):
         """Получение урона"""
+        self.last_damage_position = (self.image_x + random.randrange(-20, 20), self.image_y + random.randrange(-20, 20))
         self.current_hp -= damage
         if self.current_hp < 0:
             self.current_hp = 0
         return self.current_hp > 0
 
+    def get_damage_position(self):
+        """Возвращает позицию для отображения урона"""
+        return self.last_damage_position
+
     def heal(self, amount):
         """Лечение"""
+        self.last_damage_position = (self.image_x + random.randrange(-20, 20), self.image_y + random.randrange(-20, 20))
         self.current_hp += amount
         if self.current_hp > self.max_hp:
             self.current_hp = self.max_hp
@@ -865,10 +924,80 @@ class Fight_player:
             self.current_mana = self.max_mana
 
 
+class EndTurnButton:
+    """Кнопка завершения хода"""
+
+    def __init__(self, x, y, width=150, height=50):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+        self.text = "КОНЕЦ ХОДА"
+        self.is_hovered = False
+        self.is_pressed = False
+        self.is_enabled = True
+
+        self.hitbox = arcade.rect.XYWH(x, y, width, height)
+
+    def draw(self):
+        """Отрисовка кнопки"""
+        # Цвет кнопки
+        if not self.is_enabled:
+            color = arcade.color.DARK_GRAY
+        elif self.is_pressed:
+            color = arcade.color.DARK_GREEN
+        elif self.is_hovered:
+            color = arcade.color.RED
+        else:
+            color = arcade.color.DARK_RED
+
+        # Фон кнопки
+        arcade.draw_rect_filled(self.hitbox, color)
+
+        # Рамка
+        border_color = arcade.color.GOLD if self.is_enabled else arcade.color.DARK_GRAY
+        arcade.draw_rect_outline(self.hitbox, border_color, 3)
+
+        # Текст
+        arcade.draw_text(
+            self.text,
+            self.x,
+            self.y,
+            arcade.color.WHITE,
+            18,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+    def check_hover(self, x, y):
+        """Проверка наведения мыши"""
+        self.is_hovered = (
+                self.hitbox.left <= x <= self.hitbox.right and
+                self.hitbox.bottom <= y <= self.hitbox.top
+        )
+        return self.is_hovered
+
+    def on_press(self):
+        """Обработка нажатия"""
+        if self.is_hovered and self.is_enabled:
+            self.is_pressed = True
+            return True
+        return False
+
+    def on_release(self):
+        """Обработка отпускания"""
+        if self.is_pressed:
+            self.is_pressed = False
+            return True
+        return False
+
+
 # Данный класс должен храниться вместе с
 # остальными окнами игры (меню и подземелье)
 # в основном коде, так что я буду перекидывать его
-class CardGameView(arcade.View):
+"""class CardGameView(arcade.View):
     def __init__(self, x, y):
         super().__init__()
         self.coords = (x, y)
@@ -887,7 +1016,7 @@ class CardGameView(arcade.View):
         self.setup()
 
     def setup(self):
-        """Настройка игры"""
+        # Нстройка игры
         # Создаем игрока с указанными параметрами
         player_image_path = "images/Texture2D/mag_1.png"
         self.player = Fight_player("Игрок", player_image_path, max_hp=100, max_mana=10)
@@ -906,7 +1035,7 @@ class CardGameView(arcade.View):
         self.create_cards_on_table()
 
     def create_random_slime(self):
-        """Создание случайного слизня"""
+        '''Создание случайного слизня'''
         # Очищаем список мобов
         self.mobs.clear()
 
@@ -929,7 +1058,7 @@ class CardGameView(arcade.View):
         print(f"Урон: {new_slime.damage}")
 
     def create_cards_on_table(self):
-        """Создает 5 карт на игровом столе"""
+        '''Создает 5 карт на игровом столе'''
         # Параметры стола
         table_height = 150  # Высота стола
 
@@ -999,7 +1128,7 @@ class CardGameView(arcade.View):
             self.cards.append(card)
 
     def on_draw(self):
-        """Отрисовка игры"""
+        '''Отрисовка игры'''
         self.clear()
 
         # Рисуем фон если текстуры загружены
@@ -1097,12 +1226,12 @@ class CardGameView(arcade.View):
         )
 
     def on_update(self, delta_time):
-        """Обновление логики игры"""
+        '''Обновление логики игры'''
         for card in self.cards:
             card.update()
 
     def on_key_press(self, key, modifiers):
-        """Обработка нажатия клавиш"""
+        '''Обработка нажатия клавиш'''
         if key == arcade.key.P:  # P или русская П
             self.create_random_slime()
             print("Нажата клавиша P - создан новый случайный слизень!")
@@ -1115,18 +1244,18 @@ class CardGameView(arcade.View):
             self.window.show_view(game_view)
 
     def on_mouse_motion(self, x, y, dx, dy):
-        """Обработка движения мыши"""
+        '''Обработка движения мыши'''
         for card in self.cards:
             card.check_mouse_hover(x, y)
 
     def on_mouse_press(self, x, y, button, modifiers):
-        """Обработка нажатия мыши"""
+        '''Обработка нажатия мыши'''
         for card in self.cards:
             if card.check_mouse_hover(x, y):
                 card.on_press()
 
     def on_mouse_release(self, x, y, button, modifiers):
-        """Обработка отпускания мыши"""
+        '''Обработка отпускания мыши'''
         for card in self.cards:
             if card.on_release():
                 print(f"Нажата карта: {card.text}")
@@ -1150,7 +1279,7 @@ class CardGameView(arcade.View):
                     self.player.heal(20)
 
     def attack_current_slime(self, damage):
-        """Атака текущего слизня"""
+        '''Атака текущего слизня'''
         if not self.current_slime or not self.current_slime.is_alive:
             print("Нет живого слизня для атаки!")
             return
@@ -1162,4 +1291,4 @@ class CardGameView(arcade.View):
         if not survived:
             print(f"{self.current_slime.name} повержен!")
         else:
-            print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")
+            print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")"""
