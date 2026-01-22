@@ -1,7 +1,6 @@
 import arcade
 import random
 from cards_test_1 import *
-from defence_cards import *
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TITLE = "Карточная игра"
@@ -1292,3 +1291,4 @@ class EndTurnButton:
             print(f"{self.current_slime.name} повержен!")
         else:
             print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")"""
+
