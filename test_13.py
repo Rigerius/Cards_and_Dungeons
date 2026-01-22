@@ -223,7 +223,7 @@ class GameView(arcade.View):
         try:
             # Сначала пытаемся загрузить пользовательскую текстуру для блоков
             if os.path.exists("images/tiles/lava.jpg"):
-                self.block_texture = arcade.load_texture("images/tiles/лава.jpg")
+                self.block_texture = arcade.load_texture("images/tiles/lava.jpg")
             else:
                 # Создаем простую текстуру для блоков - красный квадрат
                 self.block_texture = arcade.make_soft_square_texture(
@@ -237,14 +237,14 @@ class GameView(arcade.View):
             self._background_texture = None
             try:
                 if os.path.exists("images/tiles/fire_land.jpg"):
-                    self._background_texture = arcade.load_texture("images/tiles/Темная_плита.jpg")
+                    self._background_texture = arcade.load_texture("images/tiles/fire_land.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
             self._room_texture = None
             try:
                 if os.path.exists("images/tiles/magma_2.jpg"):
-                    self._room_texture = arcade.load_texture("images/tiles/камушки_1.jpg")
+                    self._room_texture = arcade.load_texture("images/tiles/magma_2.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
@@ -1559,4 +1559,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
