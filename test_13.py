@@ -6,6 +6,7 @@ import os
 from dungeons import *
 from test_fight import *
 from emitter_damage import *
+from Screen_of_death import *
 
 # Константы для меню
 SCREEN_WIDTH = 1024
@@ -18,6 +19,299 @@ PLAYER_SPEED = 10
 DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
+
+
+class DeathScreenView(arcade.View):
+    """Окно смерти с случайными фразами"""
+
+    def __init__(self, background_texture=None):
+        super().__init__()
+        self.background_texture = background_texture
+        self.death_phrases = []
+        self.current_phrase = ""
+        self.load_death_phrases()
+        self.select_random_phrase()
+
+        # Кнопки
+        self.restart_button = Button(
+            x=self.window.width // 2 - 150,
+            y=self.window.height * 0.3,
+            width=280,
+            height=60,
+            text="Начать заново",
+            color=arcade.color.DARK_GREEN,
+            hover_color=arcade.color.GREEN
+        )
+
+        self.menu_button = Button(
+            x=self.window.width // 2 + 150,
+            y=self.window.height * 0.3,
+            width=280,
+            height=60,
+            text="В главное меню",
+            color=arcade.color.DARK_BLUE,
+            hover_color=arcade.color.LIGHT_BLUE
+        )
+
+        self.quit_button = Button(
+            x=self.window.width // 2,
+            y=self.window.height * 0.2,
+            width=280,
+            height=60,
+            text="Выйти из игры",
+            color=arcade.color.DARK_RED,
+            hover_color=arcade.color.RED
+        )
+
+        # Анимационные переменные
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def load_death_phrases(self):
+        """Загружает фразы из файла"""
+        try:
+            file_path = "most_frequent_screen.txt"
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    content = file.read()
+
+                # Разделяем фразы по разделителю */
+                sections = content.split('*/')
+                all_phrases = []
+
+                for section in sections:
+                    # Убираем пустые строки и добавляем непустые фразы
+                    lines = [line.strip() for line in section.strip().split('\n') if line.strip()]
+                    all_phrases.extend(lines)
+
+                self.death_phrases = all_phrases
+                print(f"Загружено {len(self.death_phrases)} фраз смерти")
+            else:
+                # Фразы по умолчанию, если файл не найден
+                self.death_phrases = [
+                    "Поражение! Ваше приключение подошло к концу...",
+                    "Вы пали в бою, но ваша слава живет в легендах.",
+                    "Даже самые смелые герои иногда проигрывают...",
+                    "В следующий раз удача будет на вашей стороне!",
+                    "Ваше путешествие окончено, но память о вас останется."
+                ]
+                print("Файл most_frequent_screen.txt не найден. Используются фразы по умолчанию.")
+
+        except Exception as e:
+            print(f"Ошибка загрузки фраз смерти: {e}")
+            self.death_phrases = ["Произошла ошибка при загрузке сообщения..."]
+
+    def select_random_phrase(self):
+        """Выбирает случайную фразу"""
+        if self.death_phrases:
+            self.current_phrase = random.choice(self.death_phrases)
+        else:
+            self.current_phrase = "Поражение!"
+
+    def on_show(self):
+        """Вызывается при показе экрана смерти"""
+        arcade.set_background_color(arcade.color.BLACK)
+        # Сбрасываем анимацию
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def on_draw(self):
+        """Отрисовка экрана смерти"""
+        self.clear()
+
+        # Рисуем фон (если есть текстура)
+        if self.background_texture:
+            background_rect = arcade.rect.XYWH(
+                self.window.width // 2,
+                self.window.height // 2,
+                self.window.width,
+                self.window.height
+            )
+            arcade.draw_texture_rect(self.background_texture, background_rect)
+
+        # Затемняющий слой
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.window.width // 2,
+            self.window.height // 2,
+            self.window.width,
+            self.window.height),
+            (0, 0, 0, int(self.fade_alpha * 180))
+        )
+
+        # Большой заголовок ПОРАЖЕНИЕ
+        arcade.draw_text(
+            "ПОРАЖЕНИЕ",
+            self.window.width // 2,
+            self.window.height * 0.7,
+            (255, 0, 0, int(self.text_alpha * 255)),
+            64,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Выбранная фраза
+        if self.current_phrase:
+            # Разбиваем длинную фразу на строки
+            words = self.current_phrase.split()
+            lines = []
+            current_line = ""
+
+            for word in words:
+                if len(current_line + " " + word) <= 40:
+                    current_line += " " + word if current_line else word
+                else:
+                    lines.append(current_line)
+                    current_line = word
+
+            if current_line:
+                lines.append(current_line)
+
+            # Рисуем каждую строку
+            line_height = 40
+            start_y = self.window.height * 0.55
+
+            for i, line in enumerate(lines):
+                arcade.draw_text(
+                    line.strip(),
+                    self.window.width // 2,
+                    start_y - i * line_height,
+                    (255, 255, 255, int(self.text_alpha * 255)),
+                    28,
+                    anchor_x="center",
+                    anchor_y="center",
+                    bold=True
+                )
+
+        # Рисуем кнопки с учетом прозрачности
+        if self.buttons_alpha > 0:
+            # Полупрозрачные фоны для кнопок
+            for button in [self.restart_button, self.menu_button, self.quit_button]:
+                button_rect = arcade.LRBT(
+                    button.x - button.width // 2,
+                    button.x + button.width // 2,
+                    button.y - button.height // 2,
+                    button.y + button.height // 2
+                )
+
+                # Фон кнопки с прозрачностью
+                current_color = button.hover_color if button.is_hovered else button.color
+                r, g, b = current_color[:3]
+                arcade.draw_lrbt_rectangle_filled(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    (r, g, b, int(self.buttons_alpha * 255))
+                )
+
+                # Рамка кнопки
+                border_color = arcade.color.BLACK
+                if button.is_pressed:
+                    border_color = arcade.color.RED
+                arcade.draw_lrbt_rectangle_outline(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    border_color,
+                    2
+                )
+
+                # Текст кнопки с прозрачностью
+                button.text_obj.color = (
+                    button.text_obj.color[0],
+                    button.text_obj.color[1],
+                    button.text_obj.color[2],
+                    int(self.buttons_alpha * 255)
+                )
+                button.text_obj.draw()
+
+            # Подсказка
+            arcade.draw_text(
+                "Выберите дальнейшее действие",
+                self.window.width // 2,
+                self.window.height * 0.4,
+                (200, 200, 200, int(self.buttons_alpha * 200)),
+                20,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+    def on_update(self, delta_time):
+        """Обновление анимации"""
+        self.animation_timer += delta_time
+
+        # Анимация затемнения
+        if self.animation_timer > 0.5:
+            self.fade_alpha = min(1.0, self.fade_alpha + delta_time * 2)
+
+        # Анимация текста
+        if self.animation_timer > 1.0:
+            self.text_alpha = min(1.0, self.text_alpha + delta_time)
+
+        # Анимация кнопок
+        if self.animation_timer > 2.0:
+            self.buttons_alpha = min(1.0, self.buttons_alpha + delta_time * 2)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        if self.buttons_alpha > 0:
+            self.restart_button.check_hover(x, y)
+            self.menu_button.check_hover(x, y)
+            self.quit_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            if self.restart_button.check_hover(x, y):
+                self.restart_button.on_press()
+            if self.menu_button.check_hover(x, y):
+                self.menu_button.on_press()
+            if self.quit_button.check_hover(x, y):
+                self.quit_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            if self.restart_button.is_pressed and self.restart_button.check_hover(x, y):
+                self.restart_button.on_release()
+                self.restart_game()
+
+            if self.menu_button.is_pressed and self.menu_button.check_hover(x, y):
+                self.menu_button.on_release()
+                self.return_to_menu()
+
+            if self.quit_button.is_pressed and self.quit_button.check_hover(x, y):
+                self.quit_button.on_release()
+                self.quit_game()
+
+    def restart_game(self):
+        """Перезапуск игры"""
+        print("Перезапуск игры...")
+        # Создаем новую игру
+        x, y = DUNGEON_MAP['player_start']
+        game_view = GameView(x, y)
+        self.window.show_view(game_view)
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        print("Возврат в главное меню...")
+        try:
+            background_texture = arcade.load_texture(":resources:images/backgrounds/abstract_1.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
+
+    def quit_game(self):
+        """Выход из игры"""
+        print("Выход из игры...")
+        arcade.close_window()
 
 
 # --- Классы для меню ---
@@ -764,7 +1058,7 @@ class GameView(arcade.View):
         self._update_visible_sprites()
 
     def start_card_game(self, x, y):
-        """Запускает карточную игру""" # Импортируем здесь, чтобы избежать циклического импорта
+        """Запускает карточную игру"""  # Импортируем здесь, чтобы избежать циклического импорта
         card_game_view = CardGameView(x, y)
         self.window.show_view(card_game_view)
 
@@ -1332,22 +1626,13 @@ class CardGameView(arcade.View):
 
                 self.player.take_damage(damage)
                 if self.player.current_hp <= 0:
-                    print("Игрок повержен! Игра окончена.")
-                    # Добавляем сообщение о поражении
-                    defeat_pos = (self.width // 2, self.height // 2)
-                    self.damage_emitter.add_damage(
-                        defeat_pos[0],
-                        defeat_pos[1],
-                        "ПОРАЖЕНИЕ!",
-                        True
-                    )
-                    # Меняем цвет на темно-красный для сообщения о поражении
-                    self.damage_emitter.particles[-1].color = arcade.color.DARK_RED
+                    print("Игрок повержен! Показываем экран смерти.")
 
-                    x, y = self.coords
-                    game_view = GameView(x, y)
+                    # Создаем и показываем экран смерти
+                    death_screen = DeathScreenView()
+                    # Восстанавливаем размер окна
                     self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    game_view.back_to_menu()
+                    self.window.show_view(death_screen)
                     return
 
             self.is_player_turn = True
@@ -1559,5 +1844,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
