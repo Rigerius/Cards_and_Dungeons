@@ -225,10 +225,10 @@ for i in range(26, 225):
     dun_250[10][i] = ' '
     dun_250[13][i] = ' '
 for i in range(123, 140):
+    dun_250[20][i] = ' '
+    dun_250[21][i] = ' '
     dun_250[22][i] = ' '
     dun_250[23][i] = ' '
-    dun_250[21][i] = ' '
-    dun_250[24][i] = ' '
 
 # Диагональные проходы
 for i in range(1, 20):
@@ -282,13 +282,132 @@ for i in range(1, len(dun_250) - 1):
                 and dun_250[i - 1][j + 1] != ' ' and dun_250[i - 1][j - 1] != ' '):
             dun_250[i][j] = '='
 
+for y in range(250):
+    dun_250[y][0] = '='
+    dun_250[y][249] = '='
+
+# Различия между направлениями стен
+gorizontal_walls = []
+vertical_walls = []
+walls_1 = []
+walls_2 = []
+walls_3 = []
+walls_4 = []
+
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] == '*'
+            and dun_250[i][j + 1] == '*'
+            and dun_250[i - 1][j] != '*'
+            and dun_250[i + 1][j] != '*'):
+            gorizontal_walls.append((i, j))
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] != '*'
+            and dun_250[i][j + 1] != '*'
+            and dun_250[i - 1][j] == '*'
+            and dun_250[i + 1][j] == '*'):
+            vertical_walls.append((i, j))
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] == '*'
+            and dun_250[i][j + 1] != '*'
+            and dun_250[i - 1][j] != '*'
+            and dun_250[i + 1][j] == '*'
+            and dun_250[i][j] == '*'):
+            walls_1.append((i, j))
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] != '*'
+            and dun_250[i][j + 1] == '*'
+            and dun_250[i - 1][j] == '*'
+            and dun_250[i + 1][j] != '*'
+            and dun_250[i][j] == '*'):
+            walls_3.append((i, j))
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] != '*'
+            and dun_250[i][j + 1] == '*'
+            and dun_250[i - 1][j] != '*'
+            and dun_250[i + 1][j] == '*'
+            and dun_250[i][j] == '*'):
+            walls_2.append((i, j))
+for i in range(1, len(dun_250) - 1):
+    for j in range(1, len(dun_250[i]) - 1):
+        if (dun_250[i][j - 1] == '*'
+            and dun_250[i][j + 1] != '*'
+            and dun_250[i - 1][j] == '*'
+            and dun_250[i + 1][j] != '*'
+            and dun_250[i][j] == '*'):
+            walls_4.append((i, j))
+
+for i in gorizontal_walls:
+    dun_250[i[0]][i[1]] = '#'
+for i in vertical_walls:
+    dun_250[i[0]][i[1]] = '$'
+for i in walls_1:
+    dun_250[i[0]][i[1]] = '1'
+for i in walls_2:
+    dun_250[i[0]][i[1]] = '2'
+for i in walls_3:
+    dun_250[i[0]][i[1]] = '3'
+for i in walls_4:
+    dun_250[i[0]][i[1]] = '4'
+
+for i in range(128, 134):
+    dun_250[i][26] = '$'
+    dun_250[i][27] = '$'
+dun_250[134][26] = '4'
+dun_250[134][27] = '3'
+dun_250[142][207] = ' '
+dun_250[142][208] = '3'
+dun_250[142][209] = '1'
+dun_250[141][209] = '4'
+dun_250[142][238] = '2'
+dun_250[142][239] = '4'
+dun_250[142][240] = ' '
+dun_250[141][238] = '3'
+dun_250[127][224] = '3'
+dun_250[127][223] = '4'
+dun_250[124][220] = ' '
+dun_250[124][219] = '$'
+dun_250[124][227] = ' '
+dun_250[124][228] = '$'
+dun_250[86][124] = ' '
+dun_250[86][125] = '3'
+dun_250[86][126] = '1'
+dun_250[85][126] = '4'
+dun_250[71][133] = '2'
+dun_250[70][133] = '3'
+dun_250[70][134] = '1'
+dun_250[70][135] = ' '
+dun_250[25][133] = '2'
+dun_250[25][134] = '#'
+dun_250[24][133] = '#'
+dun_250[24][134] = '#'
+dun_250[18][129] = '='
+dun_250[18][130] = '='
+dun_250[190][117] = ' '
+dun_250[191][117] = '1'
+
 for y, x in rooms:
     for dy in range(0, 8):
         for dx in range(0, 8):
             dun_250[y+dy][x+dx] = '-'
 
-'''for i in dun_250:
+# Финальная комната (10x10) в позиции y=10-20, x=120-130
+for i in range(10):
+    for j in range(10):
+        dun_250[7+i][120+j] = '_'
+
+bl = []
+for y in range(1, 249):
+    for x in range(1, 249):
+        if dun_250[y][x] == '*':
+            bl.append((y, x))
+
+for i in dun_250:
     r = ''
     for j in i:
         r += f'{j[0]} '
-    print(r)'''
+    print(r)

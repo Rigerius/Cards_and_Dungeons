@@ -17,5 +17,60 @@ images/tiles/Тьма/темная бездна_1.jpg
 images/tiles/Тьма/темная бездна_2.jpg
 images/tiles/Тьма/темная бездна_3.jpg
 images/tiles/Тьма/темная бездна_4.jpg
+images/tiles/лед_4.jpg
+images/tiles/лед_3.jpg
+|
+stone
+images/tiles/lava.jpg
+images/tiles/стена_2.jpg
+images/tiles/стена_2.jpg
+images/tiles/стена_2.jpg
+images/tiles/стена_2.jpg
+images/tiles/стена_2.jpg
+images/tiles/стена_2.jpg
+images/tiles/Темная_плита.jpg
+images/tiles/камушки_1.jpg
+|
+wind
+images/tiles/lava.jpg
+images/tiles/Тьма/темная бездна_г.jpg
+images/tiles/Тьма/темная бездна_в.jpg
+images/tiles/Тьма/темная бездна_1.jpg
+images/tiles/Тьма/темная бездна_2.jpg
+images/tiles/Тьма/темная бездна_3.jpg
+images/tiles/Тьма/темная бездна_4.jpg
+images/tiles/серая_плита_2.jpg
+images/tiles/туман.jpg
+|
+lightning
+images/tiles/lava.jpg
+images/tiles/гроза_3.jpg
+images/tiles/гроза_3.jpg
+images/tiles/гроза_3.jpg
+images/tiles/гроза_3.jpg
+images/tiles/гроза_3.jpg
+images/tiles/гроза_3.jpg
+images/tiles/грозовая_земля_1.jpg
+images/tiles/грозовые_облака_1.jpg
+|
+light
+images/tiles/lava.jpg
+images/tiles/lava.jpg
+images/tiles/lava.jpg
+images/tiles/Тьма/темная бездна_1.jpg
+images/tiles/Тьма/темная бездна_2.jpg
+images/tiles/Тьма/темная бездна_3.jpg
+images/tiles/Тьма/темная бездна_4.jpg
+images/tiles/плиты_1.jpg
+images/tiles/плиты_1.jpg
+|
+dark
+images/tiles/lava.jpg
+images/tiles/Тьма/темная бездна_г.jpg
+images/tiles/Тьма/темная бездна_в.jpg
+images/tiles/Тьма/темная бездна_1.jpg
+images/tiles/Тьма/темная бездна_2.jpg
+images/tiles/Тьма/темная бездна_3.jpg
+images/tiles/Тьма/темная бездна_4.jpg
 images/tiles/Тьма/темная земля_1.jpg
 images/tiles/Тьма/темная земля_2.jpg

@@ -241,6 +241,84 @@ for i in range(1, len(dun_2) - 1):
                 and dun_2[i - 1][j + 1] != ' ' and dun_2[i - 1][j - 1] != ' '):
             dun_2[i][j] = '='
 
+# Различия между направлениями стен
+gorizontal_walls = []
+vertical_walls = []
+walls_1 = []
+walls_2 = []
+walls_3 = []
+walls_4 = []
+
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] == '*'
+            and dun_2[i][j + 1] == '*'
+            and dun_2[i - 1][j] != '*'
+            and dun_2[i + 1][j] != '*'):
+            gorizontal_walls.append((i, j))
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] != '*'
+            and dun_2[i][j + 1] != '*'
+            and dun_2[i - 1][j] == '*'
+            and dun_2[i + 1][j] == '*'):
+            vertical_walls.append((i, j))
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] == '*'
+            and dun_2[i][j + 1] != '*'
+            and dun_2[i - 1][j] != '*'
+            and dun_2[i + 1][j] == '*'
+            and dun_2[i][j] == '*'):
+            walls_1.append((i, j))
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] != '*'
+            and dun_2[i][j + 1] == '*'
+            and dun_2[i - 1][j] == '*'
+            and dun_2[i + 1][j] != '*'
+            and dun_2[i][j] == '*'):
+            walls_3.append((i, j))
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] != '*'
+            and dun_2[i][j + 1] == '*'
+            and dun_2[i - 1][j] != '*'
+            and dun_2[i + 1][j] == '*'
+            and dun_2[i][j] == '*'):
+            walls_2.append((i, j))
+for i in range(1, len(dun_2) - 1):
+    for j in range(1, len(dun_2[i]) - 1):
+        if (dun_2[i][j - 1] == '*'
+            and dun_2[i][j + 1] != '*'
+            and dun_2[i - 1][j] == '*'
+            and dun_2[i + 1][j] != '*'
+            and dun_2[i][j] == '*'):
+            walls_4.append((i, j))
+
+for i in gorizontal_walls:
+    dun_2[i[0]][i[1]] = '#'
+for i in vertical_walls:
+    dun_2[i[0]][i[1]] = '$'
+for i in walls_1:
+    dun_2[i[0]][i[1]] = '1'
+for i in walls_2:
+    dun_2[i[0]][i[1]] = '2'
+for i in walls_3:
+    dun_2[i[0]][i[1]] = '3'
+for i in walls_4:
+    dun_2[i[0]][i[1]] = '4'
+
+for y, x in rooms:
+    for dy in range(0, 8):
+        for dx in range(0, 8):
+            dun_2[y+dy][x+dx] = '-'
+
+# Финальная комната (10x10) в позиции y=100-110, x=60-70
+for i in range(10):
+    for j in range(10):
+        dun_2[8+i][120+j] = '_'
+
 for y, x in rooms:
     for dy in range(0, 8):
         for dx in range(0, 8):
