@@ -461,10 +461,11 @@ class Player(arcade.Sprite):
 class GameView(arcade.View):
     """Основной класс игры с оптимизацией для большой карты"""
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, element):
         super().__init__()
         self.x = x
         self.y = y
+        self.element = element
 
         # Списки спрайтов
         self.player_sprite = None
@@ -513,28 +514,36 @@ class GameView(arcade.View):
 
     def _load_textures(self):
         """Загружает текстуры для блоков и фона"""
+        with open('elements.txt', 'r', encoding='utf-8') as f:
+            a = f.read()
+        a = [i.strip().split('\n') for i in a.split('|')]
+        el = None
+        for i in a:
+            if i[0] == self.element:
+                el = i[1:]
+                break
         try:
-            self.block_texture = arcade.load_texture("images/tiles/lava.jpg")
-            self.gorizontal_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_г.jpg")
-            self.vertical_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_в.jpg")
-            self.walls_1_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_1.jpg")
-            self.walls_2_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_2.jpg")
-            self.walls_3_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_3.jpg")
-            self.walls_4_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_4.jpg")
+            self.block_texture = arcade.load_texture(el[0])
+            self.gorizontal_texture = arcade.load_texture(el[1])
+            self.vertical_texture = arcade.load_texture(el[2])
+            self.walls_1_texture = arcade.load_texture(el[3])
+            self.walls_2_texture = arcade.load_texture(el[4])
+            self.walls_3_texture = arcade.load_texture(el[5])
+            self.walls_4_texture = arcade.load_texture(el[6])
 
             # Загружаем текстуру для фона (будет использоваться в BackgroundTile)
             # Это загрузка для внутреннего использования, если нужно
             self._background_texture = None
             try:
                 if os.path.exists("images/tiles/fire_land.jpg"):
-                    self._background_texture = arcade.load_texture("images/tiles/Тьма/темная земля_1.jpg")
+                    self._background_texture = arcade.load_texture(el[7])
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
             self._room_texture = None
             try:
                 if os.path.exists("images/tiles/magma_2.jpg"):
-                    self._room_texture = arcade.load_texture("images/tiles/Тьма/темная земля_2.jpg")
+                    self._room_texture = arcade.load_texture(el[8])
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
@@ -902,6 +911,9 @@ class GameView(arcade.View):
         arcade.draw_text(f"Видимых спрайтов: {self.visible_sprites}",
                          10, screen_height - 120, arcade.color.WHITE, 14)
 
+        arcade.draw_text(f"element: {self.element}",
+                         100, screen_height - 10, arcade.color.WHITE, 14)
+
         # Статус блокировки
         status_text = "Статус: Свободен"
         status_color = arcade.color.GREEN
@@ -1063,7 +1075,7 @@ class GameView(arcade.View):
 
     def start_card_game(self, x, y):
         """Запускает карточную игру"""  # Импортируем здесь, чтобы избежать циклического импорта
-        card_game_view = CardGameView(x, y)
+        card_game_view = CardGameView(x, y, self.element)
         self.window.show_view(card_game_view)
 
     def _center_camera_on_player(self, instant=False):
@@ -1187,9 +1199,10 @@ class GameView(arcade.View):
 
 # --- Класс карточной игры ---
 class CardGameView(arcade.View):
-    def __init__(self, x, y):
+    def __init__(self, x, y, element):
         super().__init__()
         self.coords = (x, y)
+        self.element = element
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 600
         self.TITLE = "Карточная игра"
@@ -1419,7 +1432,7 @@ class CardGameView(arcade.View):
         elif key == arcade.key.ESCAPE:
             # Возвращаемся в основную игру
             x, y = self.coords
-            game_view = GameView(x, y)
+            game_view = GameView(x, y, self.element)
             # Восстанавливаем размер окна
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(game_view)
@@ -1483,6 +1496,7 @@ class CardGameView(arcade.View):
                                 card.is_mana = True
                             else:
                                 print("Недостаточно маны!")
+                                flag = 1
                         else:
                             flag = 1
                             break
@@ -1498,6 +1512,7 @@ class CardGameView(arcade.View):
                                     card.is_mana = True
                             else:
                                 print("Недостаточно маны!")
+                                flag = 1
                         else:
                             flag = 1
                             break
@@ -1521,6 +1536,7 @@ class CardGameView(arcade.View):
                                 card.is_mana = True
                             else:
                                 print("Недостаточно маны!")
+                                flag = 1
                         else:
                             flag = 1
                             break
@@ -1539,12 +1555,14 @@ class CardGameView(arcade.View):
                                 card.is_mana = True
                             else:
                                 print("Недостаточно маны!")
+                                flag = 1
                         else:
                             flag = 1
                             break
                 if len(self.deaded) > 0:
                     for mob in self.deaded:
                         self.mobs.remove(mob)
+                    self.deaded = []
                 if flag == 0:
                     card.is_playable = False
                     card.is_mana = False
@@ -1660,7 +1678,7 @@ class CardGameView(arcade.View):
 
             # Возвращаемся в основную игру
             x, y = self.coords
-            game_view = GameView(x, y)
+            game_view = GameView(x, y, self.element)
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(game_view)
 
@@ -1675,6 +1693,8 @@ class MenuView(arcade.View):
         super().__init__()
 
         dung = random_dun()
+        # self.element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
+        self.element = random.choice(['fire', 'water'])
         dun = dung['dungeon']
         DUNGEON_MAP = {
             "name": dung['name'],
@@ -1828,7 +1848,7 @@ class MenuView(arcade.View):
                         self.status_text = "Загрузка игры..."
                         # Создаем и показываем игровой экран с предопределенной картой
                         x, y = DUNGEON_MAP['player_start']
-                        game_view = GameView(x, y)
+                        game_view = GameView(x, y, self.element)
                         self.window.show_view(game_view)
 
                     elif btn.text == "Настройки":
