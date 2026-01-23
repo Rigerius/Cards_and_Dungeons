@@ -6,7 +6,6 @@ import os
 from dungeons import *
 from test_fight import *
 from emitter_damage import *
-from Screen_of_death import *
 
 # Константы для меню
 SCREEN_WIDTH = 1024
@@ -515,30 +514,27 @@ class GameView(arcade.View):
     def _load_textures(self):
         """Загружает текстуры для блоков и фона"""
         try:
-            # Сначала пытаемся загрузить пользовательскую текстуру для блоков
-            if os.path.exists("images/tiles/lava.jpg"):
-                self.block_texture = arcade.load_texture("images/tiles/lava.jpg")
-            else:
-                # Создаем простую текстуру для блоков - красный квадрат
-                self.block_texture = arcade.make_soft_square_texture(
-                    TILE_SIZE,
-                    arcade.color.RED,
-                    center_color=arcade.color.DARK_RED
-                )
+            self.block_texture = arcade.load_texture("images/tiles/lava.jpg")
+            self.gorizontal_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_г.jpg")
+            self.vertical_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_в.jpg")
+            self.walls_1_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_1.jpg")
+            self.walls_2_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_2.jpg")
+            self.walls_3_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_3.jpg")
+            self.walls_4_texture = arcade.load_texture("images/tiles/Тьма/темная бездна_4.jpg")
 
             # Загружаем текстуру для фона (будет использоваться в BackgroundTile)
             # Это загрузка для внутреннего использования, если нужно
             self._background_texture = None
             try:
                 if os.path.exists("images/tiles/fire_land.jpg"):
-                    self._background_texture = arcade.load_texture("images/tiles/fire_land.jpg")
+                    self._background_texture = arcade.load_texture("images/tiles/Тьма/темная земля_1.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
             self._room_texture = None
             try:
                 if os.path.exists("images/tiles/magma_2.jpg"):
-                    self._room_texture = arcade.load_texture("images/tiles/magma_2.jpg")
+                    self._room_texture = arcade.load_texture("images/tiles/Тьма/темная земля_2.jpg")
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
@@ -625,8 +621,20 @@ class GameView(arcade.View):
         """Загружает предопределенную карту с оптимизацией"""
         print("Начало загрузки карты...")
 
-        # Используем батчинг для быстрого создания спрайтов
-        squares_data = DUNGEON_MAP.get('squares', [])
+        print(DUNGEON_MAP['gorizontal'])
+
+        self.get_blocks('squares', self.block_texture)
+        self.get_blocks('gorizontal', self.gorizontal_texture)
+        self.get_blocks('vertical', self.vertical_texture)
+        self.get_blocks('walls_1', self.walls_1_texture)
+        self.get_blocks('walls_2', self.walls_2_texture)
+        self.get_blocks('walls_3', self.walls_3_texture)
+        self.get_blocks('walls_4', self.walls_4_texture)
+
+        print(f"Загрузка карты завершена. Всего спрайтов: {self.total_sprites}")
+
+    def get_blocks(self, name, texture):
+        squares_data = DUNGEON_MAP.get(name, [])
 
         # Создаем спрайты партиями для производительности
         batch_size = 1000
@@ -635,7 +643,7 @@ class GameView(arcade.View):
             for x, y in batch:
                 # Создаем спрайт блока
                 block = arcade.Sprite()
-                block.texture = self.block_texture
+                block.texture = texture
                 block.width = TILE_SIZE
                 block.height = TILE_SIZE
                 block.center_x = x + TILE_SIZE / 2  # Центрируем
@@ -643,10 +651,6 @@ class GameView(arcade.View):
 
                 self.block_sprites.append(block)
                 self.total_sprites += 1
-
-            print(f"Загружено {self.total_sprites} спрайтов...")
-
-        print(f"Загрузка карты завершена. Всего спрайтов: {self.total_sprites}")
 
     def _load_background_tiles(self):
         """Загружает фоновые клетки для всех пустых мест на карте"""
@@ -1201,6 +1205,7 @@ class CardGameView(arcade.View):
         self.end_turn_button = None
         self.turn_number = 1
         self.is_player_turn = True
+        self.deaded = []
 
         # Добавляем эмиттер урона
         self.damage_emitter = DamageEmitter()
@@ -1489,7 +1494,7 @@ class CardGameView(arcade.View):
                                 if self.player and self.current_slime and self.current_slime.is_alive:
                                     a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
                                     damage = random.randrange(a1, a2 + 1)
-                                    self.attack_current_slime(damage)
+                                    self.attack_mob(damage, self.current_slime)
                                     card.is_mana = True
                             else:
                                 print("Недостаточно маны!")
@@ -1503,7 +1508,7 @@ class CardGameView(arcade.View):
                                 print("Мана успешно потрачена!")
                                 count = int(c.split()[-1])
                                 fake_mobs = [m for m in self.mobs]
-                                if card.dict['colvo'][0] == '1':
+                                if card.dict['colvo'][0] == '1' and self.current_slime:
                                     fake_mobs.remove(self.current_slime)
                                 for i in range(count):
                                     if len(fake_mobs) == 0:
@@ -1527,7 +1532,7 @@ class CardGameView(arcade.View):
                                 a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
                                 damage = random.randrange(a1, a2 + 1)
                                 fake_mobs = [m for m in self.mobs]
-                                if card.dict['colvo'][0] == '1':
+                                if card.dict['colvo'][0] == '1' and self.current_slime:
                                     fake_mobs.remove(self.current_slime)
                                 for mob in fake_mobs:
                                     self.attack_mob(damage, mob)
@@ -1537,6 +1542,9 @@ class CardGameView(arcade.View):
                         else:
                             flag = 1
                             break
+                if len(self.deaded) > 0:
+                    for mob in self.deaded:
+                        self.mobs.remove(mob)
                 if flag == 0:
                     card.is_playable = False
                     card.is_mana = False
@@ -1587,7 +1595,7 @@ class CardGameView(arcade.View):
 
         if not survived:
             print(f"{mob} повержен!")
-            self.mobs.remove(mob)
+            self.deaded.append(mob)
         else:
             print(f"{mob.name} осталось {mob.current_hp} HP")
 
@@ -1675,8 +1683,25 @@ class MenuView(arcade.View):
             "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
             "squares": [
                 [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
-                in range(len(dun[y])) if dun[y][x] == '*'
-            ]
+                in range(len(dun[y])) if dun[y][x] == '*'],
+            "gorizontal": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '#'],
+            "vertical": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '$'],
+            "walls_1": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '1'],
+            "walls_2": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '2'],
+            "walls_3": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '3'],
+            "walls_4": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '4']
         }
 
         self.background_texture = background_texture
