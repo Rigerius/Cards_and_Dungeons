@@ -1,0 +1,21 @@
+fire
+images/tiles/lava.jpg
+images/tiles/лава.jpg
+images/tiles/лава.jpg
+images/tiles/лава.jpg
+images/tiles/лава.jpg
+images/tiles/лава.jpg
+images/tiles/лава.jpg
+images/tiles/fire_land.jpg
+images/tiles/magma_2.jpg
+|
+water
+images/tiles/lava.jpg
+images/tiles/Тьма/темная бездна_г.jpg
+images/tiles/вода_3.jpg
+images/tiles/Тьма/темная бездна_1.jpg
+images/tiles/Тьма/темная бездна_2.jpg
+images/tiles/Тьма/темная бездна_3.jpg
+images/tiles/Тьма/темная бездна_4.jpg
+images/tiles/Тьма/темная земля_1.jpg
+images/tiles/Тьма/темная земля_2.jpg
