@@ -23,18 +23,27 @@ LIST_POSESH = []
 class DeathScreenView(arcade.View):
     """Окно смерти с случайными фразами"""
 
-    def __init__(self, background_texture=None):
+    def __init__(self, element, level, background_texture=None):
+        global LIST_POSESH
         super().__init__()
         self.background_texture = background_texture
         self.death_phrases = []
         self.current_phrase = ""
         self.load_death_phrases()
         self.select_random_phrase()
+        self.element = element
+        self.level = level
 
-        # Кнопки
+        LIST_POSESH = []
+
+        # Получаем центр экрана
+        center_x = 400
+        center_y = 300
+
+        # Кнопки - выровнены по центру и расположены вертикально
         self.restart_button = Button(
-            x=self.window.width // 2 - 150,
-            y=self.window.height * 0.3,
+            x=center_x + 140,  # Центр по горизонтали
+            y=center_y - 30 -60,  # Немного выше центра
             width=280,
             height=60,
             text="Начать заново",
@@ -43,8 +52,8 @@ class DeathScreenView(arcade.View):
         )
 
         self.menu_button = Button(
-            x=self.window.width // 2 + 150,
-            y=self.window.height * 0.3,
+            x=center_x + 140,  # Центр по горизонтали
+            y=center_y - 110-60,  # Ниже кнопки рестарта
             width=280,
             height=60,
             text="В главное меню",
@@ -53,8 +62,8 @@ class DeathScreenView(arcade.View):
         )
 
         self.quit_button = Button(
-            x=self.window.width // 2,
-            y=self.window.height * 0.2,
+            x=center_x + 140,  # Центр по горизонтали
+            y=center_y - 190-60,  # Ниже кнопки меню
             width=280,
             height=60,
             text="Выйти из игры",
@@ -230,7 +239,7 @@ class DeathScreenView(arcade.View):
                 )
                 button.text_obj.draw()
 
-            # Подсказка
+            # Подсказка (над кнопками)
             arcade.draw_text(
                 "Выберите дальнейшее действие",
                 self.window.width // 2,
@@ -294,7 +303,7 @@ class DeathScreenView(arcade.View):
         print("Перезапуск игры...")
         # Создаем новую игру
         x, y = DUNGEON_MAP['player_start']
-        game_view = GameView(x, y)
+        game_view = GameView(x, y, self.element, self.level)
         self.window.show_view(game_view)
 
     def return_to_menu(self):
@@ -311,6 +320,229 @@ class DeathScreenView(arcade.View):
         """Выход из игры"""
         print("Выход из игры...")
         arcade.close_window()
+
+
+class WinScreenView(arcade.View):
+    """Окно победы"""
+
+    def __init__(self, x, y, element, level, room, background_texture=None):
+        super().__init__()
+        self.background_texture = background_texture
+        self.element = element
+        self.level = level
+        self.coords = (x, y)
+        self.room = room
+
+        # Кнопки
+        self.okey_button = Button(
+            x=self.window.width // 2,
+            y=50,
+            width=280,
+            height=60,
+            text="OK",
+            color=arcade.color.DARK_GREEN,
+            hover_color=arcade.color.GREEN
+        )
+
+        # Анимационные переменные
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def on_show(self):
+        """Вызывается при показе экрана смерти"""
+        arcade.set_background_color(arcade.color.BLACK)
+        # Сбрасываем анимацию
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def on_draw(self):
+        """Отрисовка экрана смерти"""
+        self.clear()
+
+        # Рисуем фон (если есть текстура)
+        if self.background_texture:
+            background_rect = arcade.rect.XYWH(
+                self.window.width // 2,
+                self.window.height // 2,
+                self.window.width,
+                self.window.height
+            )
+            arcade.draw_texture_rect(self.background_texture, background_rect)
+
+        # Затемняющий слой
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.window.width // 2,
+            self.window.height // 2,
+            self.window.width,
+            self.window.height),
+            (0, 0, 0, int(self.fade_alpha * 180))
+        )
+
+        # Большой заголовок ПОРАЖЕНИЕ
+        arcade.draw_text(
+            "ПОБЕДА",
+            self.window.width // 2,
+            self.window.height * 0.7,
+            (255, 0, 0, int(self.text_alpha * 255)),
+            64,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True)
+
+        arcade.draw_text(
+            'Ты избрал путь страданий...',
+            self.window.width // 2,
+            400,
+            (255, 255, 255, int(self.text_alpha * 255)),
+            28,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True)
+
+        # Рисуем кнопки с учетом прозрачности
+        if self.buttons_alpha > 0:
+            # Полупрозрачные фоны для кнопок
+            for button in [self.okey_button]:
+                button_rect = arcade.LRBT(
+                    button.x - button.width // 2,
+                    button.x + button.width // 2,
+                    button.y - button.height // 2,
+                    button.y + button.height // 2
+                )
+
+                # Фон кнопки с прозрачностью
+                current_color = button.hover_color if button.is_hovered else button.color
+                r, g, b = current_color[:3]
+                arcade.draw_lrbt_rectangle_filled(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    (r, g, b, int(self.buttons_alpha * 255))
+                )
+
+                # Рамка кнопки
+                border_color = arcade.color.BLACK
+                if button.is_pressed:
+                    border_color = arcade.color.RED
+                arcade.draw_lrbt_rectangle_outline(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    border_color,
+                    2
+                )
+
+                # Текст кнопки с прозрачностью
+                button.text_obj.color = (
+                    button.text_obj.color[0],
+                    button.text_obj.color[1],
+                    button.text_obj.color[2],
+                    int(self.buttons_alpha * 255)
+                )
+                button.text_obj.draw()
+
+            # Подсказка
+            arcade.draw_text(
+                "Выберите дальнейшее действие",
+                self.window.width // 2,
+                self.window.height * 0.4,
+                (200, 200, 200, int(self.buttons_alpha * 200)),
+                20,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+    def on_update(self, delta_time):
+        """Обновление анимации"""
+        self.animation_timer += delta_time
+
+        # Анимация затемнения
+        if self.animation_timer > 0.5:
+            self.fade_alpha = min(1.0, self.fade_alpha + delta_time * 2)
+
+        # Анимация текста
+        if self.animation_timer > 1.0:
+            self.text_alpha = min(1.0, self.text_alpha + delta_time)
+
+        # Анимация кнопок
+        if self.animation_timer > 2.0:
+            self.buttons_alpha = min(1.0, self.buttons_alpha + delta_time * 2)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        if self.buttons_alpha > 0:
+            self.okey_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            if self.okey_button.check_hover(x, y):
+                self.okey_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            if self.okey_button.is_pressed and self.okey_button.check_hover(x, y):
+                self.okey_button.on_release()
+                self.continue_game()
+
+    def continue_game(self):
+        global DUNGEON_MAP
+        global LIST_POSESH
+        # Возвращаемся в основную игру
+        print(self.room)
+        if self.room != '_':
+            x, y = self.coords
+            game_view = GameView(x, y, self.element, self.level)
+            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+            self.window.show_view(game_view)
+        else:
+            LIST_POSESH = [] 
+            dung = random_dun()
+            a = ['первый', 'второй', 'третий']
+            b = a.index(self.level) + 1
+            if b == 3:
+                pass
+            else:
+                self.level = a[b]
+                dun = dung['dungeon']
+                DUNGEON_MAP = {
+                    "name": dung['name'],
+                    "world_width": TILE_SIZE * 250,  # 16000
+                    "world_height": TILE_SIZE * 250,  # 16000
+                    "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
+                    "squares": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '*'],
+                    "gorizontal": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '#'],
+                    "vertical": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '$'],
+                    "walls_1": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '1'],
+                    "walls_2": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '2'],
+                    "walls_3": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '3'],
+                    "walls_4": [
+                        [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                        in range(len(dun[y])) if dun[y][x] == '4']
+                }
+                x, y = DUNGEON_MAP['player_start']
+                game_view = GameView(x, y, self.element, self.level)
+                self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+                self.window.show_view(game_view)
 
 
 # --- Классы для меню ---
@@ -461,11 +693,12 @@ class Player(arcade.Sprite):
 class GameView(arcade.View):
     """Основной класс игры с оптимизацией для большой карты"""
 
-    def __init__(self, x, y, element):
+    def __init__(self, x, y, element, level='первый'):
         super().__init__()
         self.x = x
         self.y = y
         self.element = element
+        self.level = level
 
         # Списки спрайтов
         self.player_sprite = None
@@ -535,15 +768,13 @@ class GameView(arcade.View):
             # Это загрузка для внутреннего использования, если нужно
             self._background_texture = None
             try:
-                if os.path.exists("images/tiles/fire_land.jpg"):
-                    self._background_texture = arcade.load_texture(el[7])
+                self._background_texture = arcade.load_texture(el[7])
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
             self._room_texture = None
             try:
-                if os.path.exists("images/tiles/magma_2.jpg"):
-                    self._room_texture = arcade.load_texture(el[8])
+                self._room_texture = arcade.load_texture(el[8])
             except Exception as e:
                 print(f"Ошибка предзагрузки фоновой текстуры: {e}")
 
@@ -605,7 +836,7 @@ class GameView(arcade.View):
         # Заполняем сетку комнатами
         for y in range(len(dun)):
             for x in range(len(dun[y])):
-                if dun[y][x] == '-':
+                if dun[y][x] == '-' or dun[y][x] == '_':
                     # Конвертируем координаты
                     tile_grid_x = x
                     tile_grid_y = len(dun) - y - 1
@@ -732,7 +963,7 @@ class GameView(arcade.View):
         for y in range(len(dun)):
             for x in range(len(dun[y])):
                 # Проверяем, что это -
-                if dun[y][x] == '-':
+                if dun[y][x] == '-' or dun[y][x] == '_':
                     tile_grid_x = x
                     tile_grid_y = len(dun) - y - 1  # Конвертируем координаты
 
@@ -894,7 +1125,7 @@ class GameView(arcade.View):
             (0, 0, 0, 150)
         )
 
-        arcade.draw_text("ПЕРВЫЙ УРОВЕНЬ",
+        arcade.draw_text(f"{self.level.upper()} УРОВЕНЬ",
                          screen_width // 2, screen_height - 40,
                          arcade.color.YELLOW, 24,
                          anchor_x="center", anchor_y="center")
@@ -1074,8 +1305,11 @@ class GameView(arcade.View):
         self._update_visible_sprites()
 
     def start_card_game(self, x, y):
-        """Запускает карточную игру"""  # Импортируем здесь, чтобы избежать циклического импорта
-        card_game_view = CardGameView(x, y, self.element)
+        """Запускает карточную игру"""
+        grid_x = int(self.player_sprite.center_x // TILE_SIZE)
+        grid_y = 250 - int(self.player_sprite.center_y // TILE_SIZE) - 1
+        print(grid_y, grid_x, dun[grid_y][grid_x])
+        card_game_view = CardGameView(x, y, self.element, self.level, dun[grid_y][grid_x])
         self.window.show_view(card_game_view)
 
     def _center_camera_on_player(self, instant=False):
@@ -1164,6 +1398,8 @@ class GameView(arcade.View):
             if not arcade.check_for_collision_with_list(temp_sprite, self.block_sprites):
                 self.player_sprite.center_x = new_x
                 self.player_sprite.center_y = new_y
+                self.player_sprite.center_x = 8000
+                self.player_sprite.center_y = 14600
                 try:
                     teleport_sound = arcade.load_sound(":resources:sounds/coin5.wav")
                     arcade.play_sound(teleport_sound)
@@ -1199,10 +1435,12 @@ class GameView(arcade.View):
 
 # --- Класс карточной игры ---
 class CardGameView(arcade.View):
-    def __init__(self, x, y, element):
+    def __init__(self, x, y, element, level, room):
         super().__init__()
         self.coords = (x, y)
         self.element = element
+        self.level = level
+        self.room = room
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 600
         self.TITLE = "Карточная игра"
@@ -1432,7 +1670,7 @@ class CardGameView(arcade.View):
         elif key == arcade.key.ESCAPE:
             # Возвращаемся в основную игру
             x, y = self.coords
-            game_view = GameView(x, y, self.element)
+            game_view = GameView(x, y, self.element, self.level)
             # Восстанавливаем размер окна
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(game_view)
@@ -1655,7 +1893,7 @@ class CardGameView(arcade.View):
                     print("Игрок повержен! Показываем экран смерти.")
 
                     # Создаем и показываем экран смерти
-                    death_screen = DeathScreenView()
+                    death_screen = DeathScreenView(self.element, self.level)
                     # Восстанавливаем размер окна
                     self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
                     self.window.show_view(death_screen)
@@ -1664,23 +1902,12 @@ class CardGameView(arcade.View):
             self.is_player_turn = True
             self.new_turn()
         else:
-            print("Все противники повержены!")
-            # Добавляем сообщение о победе
-            victory_pos = (self.width // 2, self.height // 2)
-            self.heal_emitter.add_damage(
-                victory_pos[0],
-                victory_pos[1],
-                "ПОБЕДА!",
-                True
-            )
-            # Меняем цвет на золотой для сообщения о победе
-            self.heal_emitter.particles[-1].color = arcade.color.GOLD
-
-            # Возвращаемся в основную игру
-            x, y = self.coords
-            game_view = GameView(x, y, self.element)
+            # Создаем и показываем экран смерти
+            win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
+            # Восстанавливаем размер окна
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-            self.window.show_view(game_view)
+            self.window.show_view(win_screen)
+            return
 
 
 # --- Класс меню ---
@@ -1693,8 +1920,9 @@ class MenuView(arcade.View):
         super().__init__()
 
         dung = random_dun()
-        # self.element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
-        self.element = random.choice(['fire', 'water'])
+        self.element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
+        self.element = 'dark'
+        self.level = 'первый'
         dun = dung['dungeon']
         DUNGEON_MAP = {
             "name": dung['name'],
@@ -1848,7 +2076,7 @@ class MenuView(arcade.View):
                         self.status_text = "Загрузка игры..."
                         # Создаем и показываем игровой экран с предопределенной картой
                         x, y = DUNGEON_MAP['player_start']
-                        game_view = GameView(x, y, self.element)
+                        game_view = GameView(x, y, self.element, self.level)
                         self.window.show_view(game_view)
 
                     elif btn.text == "Настройки":
