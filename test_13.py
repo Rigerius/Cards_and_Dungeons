@@ -333,15 +333,15 @@ class WinScreenView(arcade.View):
         self.coords = (x, y)
         self.room = room
 
-        # Кнопки
-        self.okey_button = Button(
+        # Кнопка для перехода в магазин
+        self.shop_button = Button(
             x=self.window.width // 2,
             y=50,
             width=280,
             height=60,
-            text="OK",
-            color=arcade.color.DARK_GREEN,
-            hover_color=arcade.color.GREEN
+            text="Перейти в магазин",
+            color=arcade.color.GOLD,
+            hover_color=arcade.color.YELLOW
         )
 
         # Анимационные переменные
@@ -351,7 +351,7 @@ class WinScreenView(arcade.View):
         self.animation_timer = 0
 
     def on_show(self):
-        """Вызывается при показе экрана смерти"""
+        """Вызывается при показе экрана победы"""
         arcade.set_background_color(arcade.color.BLACK)
         # Сбрасываем анимацию
         self.fade_alpha = 0
@@ -360,7 +360,7 @@ class WinScreenView(arcade.View):
         self.animation_timer = 0
 
     def on_draw(self):
-        """Отрисовка экрана смерти"""
+        """Отрисовка экрана победы"""
         self.clear()
 
         # Рисуем фон (если есть текстура)
@@ -382,19 +382,19 @@ class WinScreenView(arcade.View):
             (0, 0, 0, int(self.fade_alpha * 180))
         )
 
-        # Большой заголовок ПОРАЖЕНИЕ
+        # Большой заголовок ПОБЕДА
         arcade.draw_text(
             "ПОБЕДА",
             self.window.width // 2,
             self.window.height * 0.7,
-            (255, 0, 0, int(self.text_alpha * 255)),
+            (0, 255, 0, int(self.text_alpha * 255)),  # Зеленый цвет для победы
             64,
             anchor_x="center",
             anchor_y="center",
             bold=True)
 
         arcade.draw_text(
-            'Ты избрал путь страданий...',
+            'Ты одержал победу в бою!',
             self.window.width // 2,
             400,
             (255, 255, 255, int(self.text_alpha * 255)),
@@ -403,10 +403,20 @@ class WinScreenView(arcade.View):
             anchor_y="center",
             bold=True)
 
+        arcade.draw_text(
+            'Твоя награда: выбор карт в магазине',
+            self.window.width // 2,
+            350,
+            (255, 215, 0, int(self.text_alpha * 255)),  # Золотой цвет
+            24,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True)
+
         # Рисуем кнопки с учетом прозрачности
         if self.buttons_alpha > 0:
             # Полупрозрачные фоны для кнопок
-            for button in [self.okey_button]:
+            for button in [self.shop_button]:
                 button_rect = arcade.LRBT(
                     button.x - button.width // 2,
                     button.x + button.width // 2,
@@ -449,7 +459,7 @@ class WinScreenView(arcade.View):
 
             # Подсказка
             arcade.draw_text(
-                "Выберите дальнейшее действие",
+                "Выберите 5 карт для добавления в колоду",
                 self.window.width // 2,
                 self.window.height * 0.4,
                 (200, 200, 200, int(self.buttons_alpha * 200)),
@@ -477,33 +487,400 @@ class WinScreenView(arcade.View):
     def on_mouse_motion(self, x, y, dx, dy):
         """Обработка движения мыши"""
         if self.buttons_alpha > 0:
-            self.okey_button.check_hover(x, y)
+            self.shop_button.check_hover(x, y)
 
     def on_mouse_press(self, x, y, button, modifiers):
         """Обработка нажатия мыши"""
         if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
-            if self.okey_button.check_hover(x, y):
-                self.okey_button.on_press()
+            if self.shop_button.check_hover(x, y):
+                self.shop_button.on_press()
 
     def on_mouse_release(self, x, y, button, modifiers):
         """Обработка отпускания мыши"""
         if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
-            if self.okey_button.is_pressed and self.okey_button.check_hover(x, y):
-                self.okey_button.on_release()
-                self.continue_game()
+            if self.shop_button.is_pressed and self.shop_button.check_hover(x, y):
+                self.shop_button.on_release()
+                self.go_to_shop()
 
-    def continue_game(self):
+    def go_to_shop(self):
+        """Переход в магазин для выбора карт"""
+        print("Переход в магазин...")
+        shop_screen = ShopScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
+        self.window.show_view(shop_screen)
+
+
+class ShopScreenView(arcade.View):
+    """Экран магазина для выбора карт"""
+
+    def __init__(self, x, y, element, level, room):
+        super().__init__()
+        self.coords = (x, y)
+        self.element = element
+        self.level = level
+        self.room = room
+        self.SCREEN_WIDTH = 1024
+        self.SCREEN_HEIGHT = 768
+
+        # Список всех доступных карт из БД (заглушка, нужно будет подключить БД)
+        self.all_cards = []
+        # Карты, выбранные игроком
+        self.selected_cards = []
+        # Карты, отображаемые в магазине (5 рандомных карт)
+        self.shop_cards = []
+
+        # Кнопки
+        self.select_button = None
+        self.skip_button = None
+        self.back_button = None
+
+        # Статистика
+        self.selected_count = 0
+        self.max_selection = 5  # Максимум можно выбрать
+
+        self.setup()
+
+    def setup(self):
+        """Настройка магазина"""
+        # Загружаем карты из БД (заглушка)
+        self.load_cards_from_db()
+
+        # Отбираем 5 случайных карт для магазина
+        self.shop_cards = self.get_random_shop_cards(5)
+
+        # Создаем кнопки
+        self.select_button = Button(
+            x=self.SCREEN_WIDTH // 2 + 150,
+            y=100,
+            width=200,
+            height=50,
+            text=f"Взять выбранные ({self.selected_count})",
+            color=arcade.color.DARK_GREEN,
+            hover_color=arcade.color.GREEN
+        )
+
+        self.skip_button = Button(
+            x=self.SCREEN_WIDTH // 2,
+            y=100,
+            width=200,
+            height=50,
+            text="Пропустить",
+            color=arcade.color.DARK_GRAY,
+            hover_color=arcade.color.LIGHT_GRAY
+        )
+
+        self.back_button = Button(
+            x=self.SCREEN_WIDTH // 2 - 150,
+            y=100,
+            width=200,
+            height=50,
+            text="Назад",
+            color=arcade.color.DARK_BLUE,
+            hover_color=arcade.color.LIGHT_BLUE
+        )
+
+        # Создаем объекты для отображения карт в магазине
+        self.create_shop_card_objects()
+
+    def load_cards_from_db(self):
+        """Загрузка карт из базы данных (заглушка)"""
+        # Здесь будет подключение к БД
+        # Пока создаем заглушку с тестовыми картами
+        self.all_cards = []
+        for i in range(1, 51):
+            card_data = create_card(i)
+            # Добавляем тип карты на основе эффектов
+            card_data['type'] = self.get_card_type(card_data)
+            self.all_cards.append(card_data)
+
+        print(f"Загружено {len(self.all_cards)} карт из БД")
+
+    def get_card_type(self, card_data):
+        """Определяет тип карты на основе её эффектов"""
+        effects = card_data.get('effects', '')
+
+        if 'Исцеление' in effects:
+            return 'Исцеление'
+        elif 'Урон' in effects or 'Атака' in effects:
+            return 'Атака'
+        elif 'Щит' in effects or 'Защита' in effects:
+            return 'Защита'
+        elif 'Мана' in effects or 'Магия' in effects:
+            return 'Магия'
+        else:
+            return 'Особый'
+
+    def get_random_shop_cards(self, count):
+        """Выбирает случайные карты для магазина"""
+        if count > len(self.all_cards):
+            count = len(self.all_cards)
+
+        # Выбираем случайные карты
+        selected_cards = random.sample(self.all_cards, count)
+        return selected_cards
+
+    def create_shop_card_objects(self):
+        """Создает объекты для отображения карт в магазине"""
+        # Очищаем предыдущие объекты
+        self.shop_card_objects = []
+
+        # Параметры отображения карт
+        card_width = 150
+        card_height = 200
+        card_spacing = 30
+
+        # Количество карт в магазине (5)
+        cards_count = len(self.shop_cards)
+
+        # Вычисляем начальную позицию
+        total_width = cards_count * card_width + (cards_count - 1) * card_spacing
+        start_x = self.SCREEN_WIDTH // 2 - total_width // 2 + card_width // 2
+        start_y = self.SCREEN_HEIGHT // 2 + 50
+
+        # Создаем объекты для каждой карты в магазине
+        for i, card_data in enumerate(self.shop_cards):
+            card_x = start_x + i * (card_width + card_spacing)
+            card_y = start_y
+
+            # Определяем цвет в зависимости от типа карты
+            color_map = {
+                'Атака': arcade.color.LIGHT_CORAL,
+                'Защита': arcade.color.LIGHT_BLUE,
+                'Исцеление': arcade.color.LIGHT_GREEN,
+                'Магия': arcade.color.LAVENDER,
+                'Особый': arcade.color.LIGHT_YELLOW
+            }
+
+            card_type = card_data.get('type', 'Особый')
+            color = color_map.get(card_type, arcade.color.LIGHT_YELLOW)
+
+            # Создаем объект карты для магазина
+            shop_card = ShopCard(
+                x=card_x,
+                y=card_y,
+                width=card_width,
+                height=card_height,
+                card_data=card_data,
+                color=color,
+                hover_color=arcade.color.WHITE,
+                is_selected=card_data in self.selected_cards
+            )
+
+            self.shop_card_objects.append(shop_card)
+
+    def on_draw(self):
+        """Отрисовка магазина"""
+        self.clear()
+
+        # Фон
+        arcade.draw_lrbt_rectangle_filled(
+            0, self.SCREEN_WIDTH,
+            0, self.SCREEN_HEIGHT,
+            arcade.color.DARK_SLATE_GRAY
+        )
+
+        # Заголовок
+        arcade.draw_text(
+            "МАГАЗИН КАРТ",
+            self.SCREEN_WIDTH // 2,
+            self.SCREEN_HEIGHT - 50,
+            arcade.color.GOLD,
+            48,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Инструкция
+        arcade.draw_text(
+            "Выберите карты, которые хотите добавить в колоду",
+            self.SCREEN_WIDTH // 2,
+            self.SCREEN_HEIGHT - 100,
+            arcade.color.WHITE,
+            20,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        arcade.draw_text(
+            f"Выбрано карт: {self.selected_count} (максимум: {self.max_selection})",
+            self.SCREEN_WIDTH // 2,
+            self.SCREEN_HEIGHT - 130,
+            arcade.color.LIGHT_GREEN,
+            18,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        arcade.draw_text(
+            "Можно взять все, некоторые или не брать ничего",
+            self.SCREEN_WIDTH // 2,
+            self.SCREEN_HEIGHT - 160,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Рисуем карты в магазине
+        for shop_card in self.shop_card_objects:
+            shop_card.draw()
+
+        # Рисуем кнопки
+        if self.select_button:
+            self.select_button.draw()
+            # Обновляем текст кнопки
+            self.select_button.text_obj.text = f"Взять выбранные ({self.selected_count})"
+            # Делаем кнопку неактивной, если ничего не выбрано
+            if self.selected_count == 0:
+                self.select_button.color = arcade.color.DARK_GRAY
+                self.select_button.hover_color = arcade.color.GRAY
+            else:
+                self.select_button.color = arcade.color.DARK_GREEN
+                self.select_button.hover_color = arcade.color.GREEN
+
+        if self.skip_button:
+            self.skip_button.draw()
+
+        if self.back_button:
+            self.back_button.draw()
+
+        # Подсказка
+        arcade.draw_text(
+            "Нажмите на карту, чтобы выбрать/отменить выбор",
+            self.SCREEN_WIDTH // 2,
+            180,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        for shop_card in self.shop_card_objects:
+            shop_card.check_hover(x, y)
+
+        if self.select_button:
+            self.select_button.check_hover(x, y)
+
+        if self.skip_button:
+            self.skip_button.check_hover(x, y)
+
+        if self.back_button:
+            self.back_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            # Проверяем нажатие на карты
+            for shop_card in self.shop_card_objects:
+                if shop_card.check_hover(x, y):
+                    self.toggle_card_selection(shop_card)
+
+            # Проверяем нажатие на кнопки
+            if self.select_button and self.select_button.check_hover(x, y) and self.selected_count > 0:
+                self.select_button.on_press()
+
+            if self.skip_button and self.skip_button.check_hover(x, y):
+                self.skip_button.on_press()
+
+            if self.back_button and self.back_button.check_hover(x, y):
+                self.back_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.select_button and self.select_button.is_pressed and self.select_button.check_hover(x,
+                                                                                                       y) and self.selected_count > 0:
+                self.select_button.on_release()
+                self.finalize_selection()
+
+            if self.skip_button and self.skip_button.is_pressed and self.skip_button.check_hover(x, y):
+                self.skip_button.on_release()
+                self.skip_selection()
+
+            if self.back_button and self.back_button.is_pressed and self.back_button.check_hover(x, y):
+                self.back_button.on_release()
+                self.go_back()
+
+    def toggle_card_selection(self, shop_card):
+        """Выбор/отмена выбора карты"""
+        if shop_card.card_data in self.selected_cards:
+            # Отменяем выбор
+            self.selected_cards.remove(shop_card.card_data)
+            shop_card.is_selected = False
+            self.selected_count -= 1
+            print(f"Карта {shop_card.card_data['name']} удалена из выбора")
+        else:
+            # Проверяем лимит выбора
+            if self.selected_count < self.max_selection:
+                # Выбираем карту
+                self.selected_cards.append(shop_card.card_data)
+                shop_card.is_selected = True
+                self.selected_count += 1
+                print(f"Карта {shop_card.card_data['name']} добавлена в выбор")
+            else:
+                print(f"Достигнут лимит в {self.max_selection} карт")
+
+        # Обновляем состояние кнопок
+        self.update_buttons()
+
+    def update_buttons(self):
+        """Обновляет состояние кнопок"""
+        if self.select_button:
+            self.select_button.text_obj.text = f"Взять выбранные ({self.selected_count})"
+
+            # Делаем кнопку активной только если что-то выбрано
+            if self.selected_count == 0:
+                self.select_button.color = arcade.color.DARK_GRAY
+                self.select_button.hover_color = arcade.color.GRAY
+            else:
+                self.select_button.color = arcade.color.DARK_GREEN
+                self.select_button.hover_color = arcade.color.GREEN
+
+    def finalize_selection(self):
+        """Завершение выбора карт (взять выбранные карты)"""
+        print(f"Игрок берет {self.selected_count} карт:")
+        for card in self.selected_cards:
+            print(f"- {card['name']} (ID: {card['id']})")
+
+        # Здесь будет логика добавления карт в колоду игрока
+        # Например, добавление в глобальную колоду или сохранение в файл
+
+        # Показываем сообщение об успешном выборе
+        print(f"Карты успешно добавлены в колоду!")
+
+        # Возвращаемся в игру
+        self.return_to_game()
+
+    def skip_selection(self):
+        """Пропуск выбора карт (не брать ничего)"""
+        print("Игрок пропускает выбор карт")
+
+        # Возвращаемся в игру без добавления карт
+        self.return_to_game()
+
+    def go_back(self):
+        """Возврат на экран победы"""
+        win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
+        self.window.show_view(win_screen)
+
+    def return_to_game(self):
+        """Возврат в основную игру"""
         global DUNGEON_MAP
         global LIST_POSESH
+
         # Возвращаемся в основную игру
-        print(self.room)
+        print(f"Возврат в игру после магазина")
+
         if self.room != '_':
             x, y = self.coords
             game_view = GameView(x, y, self.element, self.level)
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(game_view)
         else:
-            LIST_POSESH = [] 
+            LIST_POSESH = []
             dung = random_dun()
             a = ['первый', 'второй', 'третий']
             b = a.index(self.level) + 1
@@ -514,9 +891,9 @@ class WinScreenView(arcade.View):
                 dun = dung['dungeon']
                 DUNGEON_MAP = {
                     "name": dung['name'],
-                    "world_width": TILE_SIZE * 250,  # 16000
-                    "world_height": TILE_SIZE * 250,  # 16000
-                    "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
+                    "world_width": TILE_SIZE * 250,
+                    "world_height": TILE_SIZE * 250,
+                    "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],
                     "squares": [
                         [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
                         in range(len(dun[y])) if dun[y][x] == '*'],
@@ -543,6 +920,137 @@ class WinScreenView(arcade.View):
                 game_view = GameView(x, y, self.element, self.level)
                 self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
                 self.window.show_view(game_view)
+
+
+class ShopCard:
+    """Класс для представления карты в магазине"""
+
+    def __init__(self, x, y, width, height, card_data, color, hover_color, is_selected=False):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.card_data = card_data
+        self.color = color
+        self.hover_color = hover_color
+        self.is_selected = is_selected
+        self.is_hovered = False
+
+        # Определяем тип карты для отображения
+        card_type = card_data.get('type', 'Особый')
+
+        # Создаем текстовые объекты
+        self.name_text = arcade.Text(
+            card_data['name'][:12] + "..." if len(card_data['name']) > 12 else card_data['name'],
+            x, y + height // 2 - 20,
+            arcade.color.BLACK,
+            12,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        self.type_text = arcade.Text(
+            f"Тип: {card_type}",
+            x, y - height // 2 + 50,
+            arcade.color.DARK_BLUE,
+            10,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        self.mana_text = arcade.Text(
+            f"Мана: {card_data['mana']}",
+            x, y - height // 2 + 35,
+            arcade.color.RED,
+            10,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Укорачиваем описание, если оно слишком длинное
+        description = card_data.get('description', '')
+        if len(description) > 40:
+            description = description[:37] + "..."
+
+        self.desc_text = arcade.Text(
+            description,
+            x, y - 10,
+            arcade.color.DARK_BROWN,
+            9,
+            anchor_x="center",
+            anchor_y="center",
+            width=width - 20,
+            align="center"
+        )
+
+        self.selected_indicator = arcade.Text(
+            "✓",
+            x + width // 2 - 15,
+            y + height // 2 - 15,
+            arcade.color.GREEN,
+            20,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+    def check_hover(self, x, y):
+        """Проверяет, находится ли курсор над картой"""
+        left = self.x - self.width // 2
+        right = self.x + self.width // 2
+        bottom = self.y - self.height // 2
+        top = self.y + self.height // 2
+
+        self.is_hovered = (left <= x <= right and bottom <= y <= top)
+        return self.is_hovered
+
+    def draw(self):
+        """Отрисовывает карту"""
+        # Основной прямоугольник карты
+        current_color = self.hover_color if self.is_hovered else self.color
+
+        # Если карта выбрана, делаем ее ярче
+        if self.is_selected:
+            # Увеличиваем яркость выбранной карты
+            r, g, b = current_color[:3]
+            current_color = (
+                min(255, r + 50),
+                min(255, g + 50),
+                min(255, b + 50)
+            )
+
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.x, self.y,
+            self.width, self.height),
+            current_color
+        )
+
+        # Рамка карты
+        border_color = arcade.color.BLACK
+        border_width = 2
+
+        # Если карта выбрана, меняем цвет рамки
+        if self.is_selected:
+            border_color = arcade.color.GOLD
+            border_width = 4
+
+        arcade.draw_rect_outline(arcade.rect.XYWH(
+            self.x, self.y,
+            self.width, self.height),
+            border_color,
+            border_width
+        )
+
+        # Текстовые элементы
+        self.name_text.draw()
+        self.type_text.draw()
+        self.mana_text.draw()
+        self.desc_text.draw()
+
+        # Индикатор выбора
+        if self.is_selected:
+            self.selected_indicator.draw()
 
 
 # --- Классы для меню ---
@@ -1021,9 +1529,9 @@ class GameView(arcade.View):
                                              )
                 else:
                     # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
+                    arcade.draw_rect_filled(arcade.rect.XYWH(
                         screen_x, screen_y,
-                        tile.width, tile.height,
+                        tile.width, tile.height),
                         arcade.color.DARK_GREEN
                     )
 
@@ -1042,9 +1550,9 @@ class GameView(arcade.View):
                                              )
                 else:
                     # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
+                    arcade.draw_rect_filled(arcade.rect.XYWH(
                         screen_x, screen_y,
-                        tile.width, tile.height,
+                        tile.width, tile.height),
                         arcade.color.DARK_GREEN
                     )
 
@@ -1067,9 +1575,9 @@ class GameView(arcade.View):
                                              )
                 else:
                     # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
+                    arcade.draw_rect_filled(arcade.rect.XYWH(
                         screen_x, screen_y,
-                        block.width, block.height,
+                        block.width, block.height),
                         arcade.color.RED
                     )
 
