@@ -510,7 +510,7 @@ class Slime(Mob):
         elif slime_type == "large":
             name = "Большой Слизень"
             max_hp = 200
-            damage = 7
+            damage = 8
             color = arcade.color.DARK_GREEN
             width = 50*2*1.5 # 50x50 пикселей
             height = 50*2*1.5
@@ -880,7 +880,7 @@ class Fight_player:
 
     def take_damage(self, damage):
         """Получение урона"""
-        self.last_damage_position = (self.image_x + random.randrange(-20, 20), self.image_y + random.randrange(-20, 20))
+        self.last_damage_position = (self.image_x + random.randrange(-30, 30), self.image_y + random.randrange(-30, 30))
         self.current_hp -= damage
         if self.current_hp < 0:
             self.current_hp = 0
@@ -888,6 +888,7 @@ class Fight_player:
 
     def get_damage_position(self):
         """Возвращает позицию для отображения урона"""
+        self.last_damage_position = (self.image_x + random.randrange(-30, 30), self.image_y + random.randrange(-30, 30))
         return self.last_damage_position
 
     def heal(self, amount):
@@ -1291,4 +1292,3 @@ class EndTurnButton:
             print(f"{self.current_slime.name} повержен!")
         else:
             print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")"""
-
