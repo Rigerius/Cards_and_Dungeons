@@ -20,11 +20,238 @@ DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
 CURRENT_COLODA = CurrentColoda()
-if len(CURRENT_COLODA) < 11:
+if len(CURRENT_COLODA) < 15:  # Измените с 11 на 15
     start_coloda()
     CURRENT_COLODA = CurrentColoda()
 print(CURRENT_COLODA)
 
+
+class DeckView(arcade.View):
+    """Черное окно с информацией о колоде"""
+
+    def __init__(self, background_texture=None):
+        super().__init__()
+        self.background_texture = background_texture
+
+        # Кнопка возврата в меню
+        self.back_button = Button(
+            x=self.window.width // 2,
+            y=self.window.height * 0.15,
+            width=280,
+            height=60,
+            text="Вернуться в меню",
+            color=arcade.color.DARK_BLUE,
+            hover_color=arcade.color.LIGHT_BLUE
+        )
+
+        # Информация о колоде
+        self.deck_info = {
+            "Всего карт": "50",
+            "Типы карт": "Атака, Защита, Исцеление, Магия",
+            "Редкость": "Обычные, Редкие, Эпические",
+            "Темы": "Огонь, Лед, Природа, Тьма, Свет"
+        }
+
+        # Статистика использования
+        self.usage_stats = {
+            "Чаще всего используется": "Огненный шар (25%)",
+            "Самый редкий карт": "Воскрешение (2%)",
+            "Средний урон": "15-25",
+            "Среднее лечение": "20-30"
+        }
+
+    def on_show(self):
+        """Вызывается при показе этого вида"""
+        arcade.set_background_color(arcade.color.BLACK)
+
+    def on_draw(self):
+        """Отрисовка окна колоды"""
+        self.clear()
+
+        # Черный фон
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.window.width // 2,
+            self.window.height // 2,
+            self.window.width,
+            self.window.height),
+            arcade.color.BLACK
+        )
+
+        # Заголовок
+        arcade.draw_text(
+            "КОЛОДА КАРТ",
+            self.window.width // 2,
+            self.window.height * 0.85,
+            arcade.color.GOLD,
+            48,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Подзаголовок
+        arcade.draw_text(
+            "Информация о вашей коллекции карт",
+            self.window.width // 2,
+            self.window.height * 0.78,
+            arcade.color.LIGHT_GRAY,
+            20,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Разделительная линия
+        arcade.draw_line(
+            self.window.width * 0.1,
+            self.window.height * 0.72,
+            self.window.width * 0.9,
+            self.window.height * 0.72,
+            arcade.color.GRAY,
+            2
+        )
+
+        # Левая колонка - Основная информация
+        arcade.draw_text(
+            "ОСНОВНАЯ ИНФОРМАЦИЯ",
+            self.window.width * 0.25,
+            self.window.height * 0.68,
+            arcade.color.LIGHT_BLUE,
+            24,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        y_position = self.window.height * 0.62
+        for key, value in self.deck_info.items():
+            arcade.draw_text(
+                f"{key}:",
+                self.window.width * 0.15,
+                y_position,
+                arcade.color.WHITE,
+                18,
+                anchor_x="left",
+                anchor_y="center"
+            )
+
+            arcade.draw_text(
+                value,
+                self.window.width * 0.35,
+                y_position,
+                arcade.color.LIGHT_GREEN,
+                18,
+                anchor_x="left",
+                anchor_y="center"
+            )
+            y_position -= 40
+
+        # Правая колонка - Статистика
+        arcade.draw_text(
+            "СТАТИСТИКА ИСПОЛЬЗОВАНИЯ",
+            self.window.width * 0.75,
+            self.window.height * 0.68,
+            arcade.color.LIGHT_BLUE,
+            24,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        y_position = self.window.height * 0.62
+        for key, value in self.usage_stats.items():
+            arcade.draw_text(
+                f"{key}:",
+                self.window.width * 0.6,
+                y_position,
+                arcade.color.WHITE,
+                18,
+                anchor_x="left",
+                anchor_y="center"
+            )
+
+            arcade.draw_text(
+                value,
+                self.window.width * 0.85,
+                y_position,
+                arcade.color.LIGHT_YELLOW,
+                18,
+                anchor_x="left",
+                anchor_y="center"
+            )
+            y_position -= 40
+
+        # Совет по использованию
+        arcade.draw_text(
+            "СОВЕТЫ ПО ИСПОЛЬЗОВАНИЮ КОЛОДЫ:",
+            self.window.width // 2,
+            self.window.height * 0.35,
+            arcade.color.LIGHT_CORAL,
+            22,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        tips = [
+            "• Балансируйте карты атаки и защиты",
+            "• Держите карты лечения на случай критических ситуаций",
+            "• Используйте магические карты для контроля боя",
+            "• Адаптируйте колоду под стиль противника",
+            "• Не забывайте о картах с эффектами области"
+        ]
+
+        y_position = self.window.height * 0.3
+        for tip in tips:
+            arcade.draw_text(
+                tip,
+                self.window.width // 2,
+                y_position,
+                arcade.color.LIGHT_GRAY,
+                16,
+                anchor_x="center",
+                anchor_y="center"
+            )
+            y_position -= 30
+
+        # Рисуем кнопку возврата
+        self.back_button.draw()
+
+        # Инструкция
+        arcade.draw_text(
+            "Нажмите кнопку ниже, чтобы вернуться в меню",
+            self.window.width // 2,
+            self.window.height * 0.08,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        self.back_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.back_button.check_hover(x, y):
+                self.back_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.back_button.is_pressed and self.back_button.check_hover(x, y):
+                self.back_button.on_release()
+                self.return_to_menu()
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        try:
+            background_texture = arcade.load_texture(":resources:images/backgrounds/abstract_1.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
 
 class DeathScreenView(arcade.View):
     """Окно смерти с случайными фразами"""
@@ -328,6 +555,709 @@ class DeathScreenView(arcade.View):
         arcade.close_window()
 
 
+class DeckBuilderView(arcade.View):
+    """Редактор колоды - выбор 15 карт из доступных по стихиям"""
+
+    def __init__(self, background_texture=None):
+        super().__init__()
+        self.background_texture = background_texture
+        self.all_cards = []  # Все карты по стихиям
+        self.selected_cards = []  # Список выбранных карт (id)
+        self.current_page = 0  # Текущая страница (стихия)
+        self.total_pages = 5  # 5 стихий
+        self.card_buttons = []  # Кнопки карт на текущей странице
+        self.setup()
+
+        # Загружаем все карты по стихиям
+        self.load_all_cards_by_elements()
+        # Загружаем текущую колоду
+        self.load_current_coloda()
+        # Создаем кнопки для текущей страницы
+        self.create_card_buttons_for_page()
+
+    def setup(self):
+        """Настройка интерфейса"""
+        # Кнопка подтверждения
+        self.confirm_button = Button(
+            x=self.window.width // 2,
+            y=80,
+            width=320,
+            height=60,
+            text="Подтвердить колоду (0/15)",
+            color=arcade.color.DARK_GRAY,
+            hover_color=arcade.color.GRAY,
+            font_size=20
+        )
+
+        # Кнопка отмены
+        self.cancel_button = Button(
+            x=self.window.width // 2 - 180,
+            y=30,
+            width=180,
+            height=50,
+            text="Отмена",
+            color=arcade.color.DARK_RED,
+            hover_color=arcade.color.RED,
+            font_size=18
+        )
+
+        # Кнопка очистки
+        self.clear_button = Button(
+            x=self.window.width // 2,
+            y=30,
+            width=180,
+            height=50,
+            text="Очистить все",
+            color=arcade.color.DARK_ORANGE,
+            hover_color=arcade.color.ORANGE,
+            font_size=18
+        )
+
+        # Кнопка случайной колоды
+        self.random_button = Button(
+            x=self.window.width // 2 + 180,
+            y=30,
+            width=180,
+            height=50,
+            text="Случайная колода",
+            color=arcade.color.DARK_BLUE,
+            hover_color=arcade.color.BLUE,
+            font_size=18
+        )
+
+        # Кнопки переключения страниц
+        self.prev_page_button = Button(
+            x=100,
+            y=self.window.height // 2,
+            width=120,
+            height=50,
+            text="← Назад",
+            color=arcade.color.DARK_GRAY,
+            hover_color=arcade.color.GRAY,
+            font_size=16
+        )
+
+        self.next_page_button = Button(
+            x=self.window.width - 100,
+            y=self.window.height // 2,
+            width=120,
+            height=50,
+            text="Вперед →",
+            color=arcade.color.DARK_GRAY,
+            hover_color=arcade.color.GRAY,
+            font_size=16
+        )
+
+        # Информация о карте
+        self.card_info_text = ""
+        self.selected_card_details = None
+
+    def load_all_cards_by_elements(self):
+        """Загрузить все карты, сгруппированные по стихиям"""
+        try:
+            from cards_test_1 import get_cards_by_element, get_element_name
+
+            self.all_cards = []
+            for i in range(5):  # 5 стихий
+                element_name = get_element_name(i)
+                element_cards = get_cards_by_element(element_name)
+                self.all_cards.append(element_cards)
+
+            print(f"Загружено {sum(len(cards) for cards in self.all_cards)} карт по {len(self.all_cards)} стихиям")
+
+        except Exception as e:
+            print(f"Ошибка загрузки карт по стихиям: {e}")
+            self.all_cards = []
+
+    def load_current_coloda(self):
+        """Загрузить текущую колоду"""
+        try:
+            from cards_test_1 import CurrentColoda
+            current_cards = CurrentColoda()
+            self.selected_cards = [card['id'] for card in current_cards]
+            self.update_confirm_button()
+        except Exception as e:
+            print(f"Ошибка загрузки текущей колоды: {e}")
+            self.selected_cards = []
+
+    def create_card_buttons_for_page(self):
+        """Создать кнопки для карт на текущей странице (стихии)"""
+        self.card_buttons = []
+
+        if self.current_page >= len(self.all_cards):
+            return
+
+        current_element_cards = self.all_cards[self.current_page]
+
+        # Параметры отображения - 2 ряда по 5 карт
+        card_width = 160
+        card_height = 100
+        margin_x = 15
+        margin_y = 20
+        cards_per_row = 5
+        rows = 2  # 2 ряда по 5 карт = 10 карт на страницу
+
+        # Начальные координаты
+        total_width = cards_per_row * card_width + (cards_per_row - 1) * margin_x
+        start_x = self.window.width // 2 - total_width // 2 + card_width // 2
+        start_y = self.window.height - 200  # Ниже заголовка
+
+        card_index = 0
+
+        for row in range(rows):
+            current_y = start_y - row * (card_height + margin_y)
+
+            for col in range(cards_per_row):
+                if card_index < len(current_element_cards):
+                    card = current_element_cards[card_index]
+
+                    current_x = start_x + col * (card_width + margin_x)
+
+                    # Проверяем, выбрана ли карта
+                    is_selected = card['id'] in self.selected_cards
+
+                    # Создаем кнопку карты
+                    card_button = CardButton(
+                        x=current_x,
+                        y=current_y,
+                        width=card_width,
+                        height=card_height,
+                        card_data=card,
+                        is_selected=is_selected
+                    )
+
+                    self.card_buttons.append(card_button)
+                    card_index += 1
+
+    def get_current_element_name(self):
+        """Получить название текущей стихии"""
+        try:
+            from cards_test_1 import get_element_display_name
+            return get_element_display_name(self.current_page)
+        except:
+            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ']
+            return element_names[self.current_page] if self.current_page < len(element_names) else 'НЕИЗВЕСТНО'
+
+    def update_confirm_button(self):
+        """Обновить текст кнопки подтверждения"""
+        count = len(self.selected_cards)
+        max_cards = 15  # Увеличили лимит до 15
+
+        if count == max_cards:
+            self.confirm_button.text = f"Подтвердить колоду ({count}/{max_cards})"
+            self.confirm_button.color = arcade.color.DARK_GREEN
+            self.confirm_button.hover_color = arcade.color.GREEN
+        elif count > max_cards:
+            self.confirm_button.text = f"Слишком много карт! ({count}/{max_cards})"
+            self.confirm_button.color = arcade.color.DARK_RED
+            self.confirm_button.hover_color = arcade.color.RED
+        else:
+            self.confirm_button.text = f"Подтвердить колоду ({count}/{max_cards})"
+            self.confirm_button.color = arcade.color.DARK_GRAY
+            self.confirm_button.hover_color = arcade.color.GRAY
+
+    def toggle_card_selection(self, card_id):
+        """Добавить/удалить карту из выбранных"""
+        if card_id in self.selected_cards:
+            self.selected_cards.remove(card_id)
+            self.selected_card_details = None
+        else:
+            # Проверяем, не превышен ли лимит
+            if len(self.selected_cards) < 15:  # Увеличили лимит до 15
+                self.selected_cards.append(card_id)
+                # Показываем информацию о выбранной карте
+                for element_cards in self.all_cards:
+                    for card in element_cards:
+                        if card['id'] == card_id:
+                            self.selected_card_details = card
+                            break
+
+        # Обновляем состояние кнопок
+        for card_button in self.card_buttons:
+            card_button.is_selected = card_button.card_data['id'] in self.selected_cards
+
+        self.update_confirm_button()
+
+    def confirm_deck(self):
+        """Подтвердить выбранную колоду"""
+        if len(self.selected_cards) != 15:  # Теперь нужно 15 карт
+            print(f"Нужно выбрать ровно 15 карт! Выбрано: {len(self.selected_cards)}")
+            return False
+
+        try:
+            from cards_test_1 import update_current_coloda
+            update_current_coloda(self.selected_cards)
+            print(f"Колода успешно обновлена с {len(self.selected_cards)} картами")
+            return True
+        except Exception as e:
+            print(f"Ошибка обновления колоды: {e}")
+            return False
+
+    def clear_selection(self):
+        """Очистить все выбранные карты"""
+        self.selected_cards = []
+        self.selected_card_details = None
+
+        # Обновляем состояние кнопок
+        for card_button in self.card_buttons:
+            card_button.is_selected = False
+
+        self.update_confirm_button()
+
+    def create_random_deck(self):
+        """Создать случайную колоду из 15 карт"""
+        if not self.all_cards:
+            return
+
+        # Собираем все доступные ID карт
+        all_card_ids = []
+        for element_cards in self.all_cards:
+            for card in element_cards:
+                all_card_ids.append(card['id'])
+
+        if len(all_card_ids) >= 15:
+            self.selected_cards = random.sample(all_card_ids, 15)
+        else:
+            self.selected_cards = all_card_ids.copy()
+
+        self.selected_card_details = None
+
+        # Обновляем состояние кнопок
+        for card_button in self.card_buttons:
+            card_button.is_selected = card_button.card_data['id'] in self.selected_cards
+
+        self.update_confirm_button()
+
+    def change_page(self, direction):
+        """Сменить страницу (стихию)"""
+        if direction == 'next':
+            self.current_page = (self.current_page + 1) % self.total_pages
+        elif direction == 'prev':
+            self.current_page = (self.current_page - 1) % self.total_pages
+
+        # Создаем новые кнопки для новой страницы
+        self.create_card_buttons_for_page()
+        self.selected_card_details = None
+
+    def on_draw(self):
+        """Отрисовка экрана редактора колоды"""
+        self.clear()
+
+        # Черный фон
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.window.width // 2,
+            self.window.height // 2,
+            self.window.width,
+            self.window.height),
+            arcade.color.BLACK
+        )
+
+        # Заголовок с названием текущей стихии
+        current_element = self.get_current_element_name()
+        arcade.draw_text(
+            f"РЕДАКТОР КОЛОДЫ - {current_element}",
+            self.window.width // 2,
+            self.window.height - 50,
+            arcade.color.GOLD,
+            36,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        arcade.draw_text(
+            f"Выберите 15 карт для вашей колоды (страница {self.current_page + 1}/{self.total_pages})",
+            self.window.width // 2,
+            self.window.height - 90,
+            arcade.color.LIGHT_GRAY,
+            18,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Текущий статус
+        count = len(self.selected_cards)
+        max_cards = 15
+        if count == max_cards:
+            status_color = arcade.color.GREEN
+        elif count > max_cards:
+            status_color = arcade.color.RED
+        else:
+            status_color = arcade.color.YELLOW
+
+        arcade.draw_text(
+            f"Выбрано карт: {count}/{max_cards}",
+            self.window.width // 2,
+            self.window.height - 120,
+            status_color,
+            20,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Разделительная линия
+        arcade.draw_line(
+            10,
+            self.window.height - 150,
+            self.window.width - 10,
+            self.window.height - 150,
+            arcade.color.GRAY,
+            2
+        )
+
+        # Рисуем кнопки карт (10 карт текущей стихии)
+        for card_button in self.card_buttons:
+            card_button.draw()
+
+        # Панель информации о выбранной карте
+        if self.selected_card_details:
+            self.draw_card_info_panel()
+
+        # Рисуем кнопки управления
+        self.confirm_button.draw()
+        self.cancel_button.draw()
+        self.clear_button.draw()
+        self.random_button.draw()
+        self.prev_page_button.draw()
+        self.next_page_button.draw()
+
+        # Инструкция
+        arcade.draw_text(
+            "Нажмите на карту, чтобы выбрать/отменить выбор | Используйте стрелки для смены стихии",
+            self.window.width // 2,
+            180,
+            arcade.color.LIGHT_GRAY,
+            14,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Список выбранных карт (миниатюры)
+        self.draw_selected_cards_list()
+
+    def draw_card_info_panel(self):
+        """Отрисовка панели с информацией о выбранной карте"""
+        if not self.selected_card_details:
+            return
+
+        card = self.selected_card_details
+
+        # Панель информации
+        panel_width = 400
+        panel_height = 200
+        panel_x = self.window.width // 2
+        panel_y = 350
+
+        # Фон панели
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            panel_x,
+            panel_y,
+            panel_width,
+            panel_height),
+            (50, 50, 50, 220)
+        )
+
+        # Рамка панели
+        arcade.draw_rect_outline(arcade.rect.XYWH(
+            panel_x,
+            panel_y,
+            panel_width,
+            panel_height),
+            arcade.color.GOLD,
+            3
+        )
+
+        # Информация о карте
+        arcade.draw_text(
+            f"ВЫБРАНА: {card['name']}",
+            panel_x,
+            panel_y + 70,
+            arcade.color.WHITE,
+            22,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        arcade.draw_text(
+            f"Мана: {card['mana']} | Эффекты: {card['effects']}",
+            panel_x,
+            panel_y + 30,
+            arcade.color.LIGHT_BLUE,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Описание карты
+        description_lines = card['description'].split('/')
+        for i, line in enumerate(description_lines[:3]):  # Показываем максимум 3 строки
+            arcade.draw_text(
+                line.strip(),
+                panel_x,
+                panel_y - 10 - i * 25,
+                arcade.color.LIGHT_GRAY,
+                14,
+                anchor_x="center",
+                anchor_y="center",
+                width=panel_width - 40
+            )
+
+    def draw_selected_cards_list(self):
+        """Отрисовка списка выбранных карт"""
+        if not self.selected_cards:
+            return
+
+        # Заголовок списка
+        arcade.draw_text(
+            "ВЫБРАННЫЕ КАРТЫ:",
+            self.window.width // 2,
+            250,
+            arcade.color.LIGHT_GREEN,
+            18,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Отображаем имена выбранных карт
+        selected_names = []
+        for element_cards in self.all_cards:
+            for card in element_cards:
+                if card['id'] in self.selected_cards:
+                    selected_names.append(card['name'])
+
+        # Показываем только первые 8 карт для экономии места
+        display_names = selected_names[:8]
+        if len(selected_names) > 8:
+            display_names.append(f"... и ещё {len(selected_names) - 8}")
+
+        for i, name in enumerate(display_names):
+            arcade.draw_text(
+                f"• {name}",
+                self.window.width // 2,
+                220 - i * 20,
+                arcade.color.LIGHT_YELLOW,
+                14,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        # Проверяем кнопки карт
+        for card_button in self.card_buttons:
+            card_button.check_hover(x, y)
+
+        # Проверяем другие кнопки
+        self.confirm_button.check_hover(x, y)
+        self.cancel_button.check_hover(x, y)
+        self.clear_button.check_hover(x, y)
+        self.random_button.check_hover(x, y)
+        self.prev_page_button.check_hover(x, y)
+        self.next_page_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            # Проверяем кнопки карт
+            for card_button in self.card_buttons:
+                if card_button.check_hover(x, y):
+                    self.toggle_card_selection(card_button.card_data['id'])
+
+            # Проверяем другие кнопки
+            if self.confirm_button.check_hover(x, y) and len(self.selected_cards) == 15:
+                self.confirm_button.on_press()
+            if self.cancel_button.check_hover(x, y):
+                self.cancel_button.on_press()
+            if self.clear_button.check_hover(x, y):
+                self.clear_button.on_press()
+            if self.random_button.check_hover(x, y):
+                self.random_button.on_press()
+            if self.prev_page_button.check_hover(x, y):
+                self.prev_page_button.on_press()
+            if self.next_page_button.check_hover(x, y):
+                self.next_page_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.confirm_button.is_pressed and self.confirm_button.check_hover(x, y):
+                self.confirm_button.on_release()
+                if self.confirm_deck():
+                    self.return_to_menu()
+
+            if self.cancel_button.is_pressed and self.cancel_button.check_hover(x, y):
+                self.cancel_button.on_release()
+                self.return_to_menu()
+
+            if self.clear_button.is_pressed and self.clear_button.check_hover(x, y):
+                self.clear_button.on_release()
+                self.clear_selection()
+
+            if self.random_button.is_pressed and self.random_button.check_hover(x, y):
+                self.random_button.on_release()
+                self.create_random_deck()
+
+            if self.prev_page_button.is_pressed and self.prev_page_button.check_hover(x, y):
+                self.prev_page_button.on_release()
+                self.change_page('prev')
+
+            if self.next_page_button.is_pressed and self.next_page_button.check_hover(x, y):
+                self.next_page_button.on_release()
+                self.change_page('next')
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        try:
+            background_texture = arcade.load_texture(":resources:images/backgrounds/abstract_1.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
+
+
+class CardButton:
+    """Кнопка карты в редакторе колоды"""
+
+    def __init__(self, x, y, width, height, card_data, is_selected=False):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.card_data = card_data
+        self.is_selected = is_selected
+        self.is_hovered = False
+
+        # Определяем цвет в зависимости от стихии (ID 1-10: огонь, 11-20: вода и т.д.)
+        element_colors = {
+            0: arcade.color.FIREBRICK,  # Огонь (ID 1-10)
+            1: arcade.color.DARK_BLUE,  # Вода (ID 11-20)
+            2: arcade.color.DARK_SLATE_GRAY,  # Камень (ID 21-30)
+            3: arcade.color.DARK_GREEN,  # Ветер (ID 31-40)
+            4: arcade.color.ELECTRIC_PURPLE  # Молния (ID 41-50)
+        }
+
+        element_index = (card_data['id'] - 1) // 10
+        self.color = element_colors.get(element_index, arcade.color.DARK_BLUE_GRAY)
+        self.hover_color = arcade.color.WHITE
+        self.selected_color = arcade.color.GOLD
+
+        # Текст карты (имя и мана)
+        self.name_text = arcade.Text(
+            card_data['name'],
+            x,
+            y + 15,
+            arcade.color.WHITE,
+            12,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        self.mana_text = arcade.Text(
+            f"Мана: {card_data['mana']}",
+            x,
+            y - 10,
+            arcade.color.LIGHT_GRAY,
+            11,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Короткое описание (первая строка)
+        description_first_line = card_data['description'].split('/')[0][:25]
+        if len(description_first_line) >= 25:
+            description_first_line = description_first_line[:22] + "..."
+
+        self.desc_text = arcade.Text(
+            description_first_line,
+            x,
+            y - 30,
+            arcade.color.LIGHT_YELLOW,
+            9,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+    def check_hover(self, x, y):
+        """Проверяет, находится ли курсор над кнопкой"""
+        left = self.x - self.width // 2
+        right = self.x + self.width // 2
+        bottom = self.y - self.height // 2
+        top = self.y + self.height // 2
+
+        self.is_hovered = (left <= x <= right and bottom <= y <= top)
+        return self.is_hovered
+
+    def draw(self):
+        """Отрисовывает кнопку карты"""
+        # Основной цвет
+        if self.is_selected:
+            current_color = self.selected_color
+        elif self.is_hovered:
+            current_color = self.hover_color
+        else:
+            current_color = self.color
+
+        # Рисуем прямоугольник с закругленными углами (эмулируем)
+        arcade.draw_rect_filled(arcade.rect.XYWH(
+            self.x,
+            self.y,
+            self.width,
+            self.height),
+            current_color
+        )
+
+        # Рисуем рамку
+        border_color = arcade.color.BLACK
+        border_width = 2
+        if self.is_selected:
+            border_color = arcade.color.RED
+            border_width = 3
+        elif self.is_hovered:
+            border_color = arcade.color.GOLD
+            border_width = 2
+
+        arcade.draw_rect_outline(arcade.rect.XYWH(
+            self.x,
+            self.y,
+            self.width,
+            self.height),
+            border_color,
+            border_width
+        )
+
+        # Рисуем ID карты в левом верхнем углу
+        arcade.draw_text(
+            f"ID: {self.card_data['id']}",
+            self.x - self.width // 2 + 5,
+            self.y + self.height // 2 - 15,
+            arcade.color.LIGHT_GRAY,
+            10,
+            anchor_x="left",
+            anchor_y="center"
+        )
+
+        # Рисуем тексты
+        self.name_text.draw()
+        self.mana_text.draw()
+        self.desc_text.draw()
+
+        # Если карта выбрана, рисуем индикатор
+        if self.is_selected:
+            arcade.draw_text(
+                "✓",
+                self.x + self.width // 2 - 15,
+                self.y + self.height // 2 - 15,
+                arcade.color.GREEN,
+                16,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            )
+
 class WinScreenView(arcade.View):
     """Окно победы"""
 
@@ -588,8 +1518,8 @@ class ShopScreenView(arcade.View):
         selected_cards = []
         for i in range(count):
             select = random.sample(self.all_cards, 1)[0]
-            """while select in CURRENT_COLODA:
-                 select = random.sample(self.all_cards, 1)[0]"""
+            while select in CURRENT_COLODA:
+                 select = random.sample(self.all_cards, 1)[0]
             selected_cards.append(select)
         return selected_cards
 
@@ -1938,8 +2868,7 @@ class CardGameView(arcade.View):
         self.arm = []
         for i in range(5):
             if len(self.coloda) == 0:
-                for c in self.deck:
-                    self.coloda.append(c)
+                self.coloda = [c for c in self.deck]
                 self.deck = []
             card = random.choice(self.coloda)
             self.arm.append(card)
@@ -2066,12 +2995,6 @@ class CardGameView(arcade.View):
         """Обновление логики игры"""
         for card in self.cards:
             card.update()
-        for mob in self.mobs:
-            mob.update()
-        if all(mob.end_animation for mob in self.mobs) and self.mobs:
-            for mob in self.mobs:
-                mob.end_animation = False
-            self.continue_enemy_turn()
 
         # Обновляем эмиттеры урона и исцеления
         self.damage_emitter.update(delta_time)
@@ -2160,7 +3083,7 @@ class CardGameView(arcade.View):
                                     self.heal_emitter.add_damage(
                                         heal_pos[0],
                                         heal_pos[1],
-                                        f"{heal_amount}",
+                                        f"-{heal_amount}",
                                         False  # Можно сделать отдельный цвет для исцеления
                                     )
                                     # Меняем цвет на красный для исцеления
@@ -2319,13 +3242,12 @@ class CardGameView(arcade.View):
         for card in self.arm:
             self.deck.append(card)
         self.arm = []
+        self.cards = []
         self.is_player_turn = False
         self.enemy_turn()
 
     def new_turn(self):
-        print(len(self.coloda), len(self.deck))
         self.turn_number += 1
-        self.cards = []
         self.create_cards_on_table()
 
     def enemy_turn(self):
@@ -2333,7 +3255,42 @@ class CardGameView(arcade.View):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         if enemies:
             for enemy in enemies:
-                enemy.start_animation()
+                damage = enemy.attack()
+                print(f"{enemy.name} атакует игрока на {damage} урона!")
+
+                # Добавляем частицу урона игроку
+                damage_pos = self.player.get_damage_position()
+                self.damage_emitter.add_damage(
+                    damage_pos[0],
+                    damage_pos[1],
+                    damage,
+                    False
+                )
+                if self.defence:
+                    self.defence[0][1] -= damage
+                    self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+                    if self.defence[0][1] <= 0:
+                        self.defence.remove(self.defence[0])
+                    if self.defence:
+                        self.defence_amount = sum([i[1] for i in self.defence])
+                    else:
+                        self.defence_amount = 0
+                else:
+                    self.player.take_damage(damage)
+                if self.player.current_hp <= 0:
+                    print("Игрок повержен! Показываем экран смерти.")
+
+                    # Создаем и показываем экран смерти
+                    death_screen = DeathScreenView(self.element, self.level)
+                    # Восстанавливаем размер окна
+                    self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    self.window.show_view(death_screen)
+                    return
+
+            self.is_player_turn = True
+            self.defence = []
+            self.defence_amount = 0
+            self.new_turn()
         else:
             # Создаем и показываем экран смерти
             win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
@@ -2341,46 +3298,6 @@ class CardGameView(arcade.View):
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(win_screen)
             return
-
-    def continue_enemy_turn(self):
-        enemies = [mob for mob in self.mobs if mob.is_alive]
-        for enemy in enemies:
-            damage = enemy.attack()
-            print(f"{enemy.name} атакует игрока на {damage} урона!")
-            # Добавляем частицу урона игроку
-            damage_pos = self.player.get_damage_position()
-            self.damage_emitter.add_damage(
-                damage_pos[0],
-                damage_pos[1],
-                damage,
-                False
-            )
-            if self.defence:
-                self.defence[0][1] -= damage
-                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
-                if self.defence[0][1] <= 0:
-                    self.defence.remove(self.defence[0])
-                if self.defence:
-                    self.defence_amount = sum([i[1] for i in self.defence])
-                else:
-                    self.defence_amount = 0
-            else:
-                self.player.take_damage(damage)
-            if self.player.current_hp <= 0:
-                print("Игрок повержен! Показываем экран смерти.")
-
-                # Создаем и показываем экран смерти
-                death_screen = DeathScreenView(self.element, self.level)
-                # Восстанавливаем размер окна
-                self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-                self.window.show_view(death_screen)
-                return
-
-        if all(enemy.end_animation is False for enemy in self.mobs if enemy.is_alive):
-            self.is_player_turn = True
-            self.defence = []
-            self.defence_amount = 0
-            self.new_turn()
 
 
 # --- Класс меню ---
@@ -2447,9 +3364,9 @@ class MenuView(arcade.View):
             y=self.window.height * 0.55,
             width=300,
             height=60,
-            text="Настройки",
-            color=arcade.color.DARK_BLUE_GRAY,
-            hover_color=arcade.color.LIGHT_BLUE
+            text="Колода",
+            color=arcade.color.PURPLE,
+            hover_color=arcade.color.VIOLET
         )
 
         button3 = Button(
@@ -2457,12 +3374,22 @@ class MenuView(arcade.View):
             y=self.window.height * 0.4,
             width=300,
             height=60,
+            text="Настройки",
+            color=arcade.color.DARK_BLUE_GRAY,
+            hover_color=arcade.color.LIGHT_BLUE
+        )
+
+        button4 = Button(
+            x=self.window.width // 2,
+            y=self.window.height * 0.25,
+            width=300,
+            height=60,
             text="Выход",
             color=arcade.color.DARK_RED,
             hover_color=arcade.color.RED
         )
 
-        self.buttons = [button1, button2, button3]
+        self.buttons = [button1, button2, button3, button4]
 
     def on_show(self):
         """Вызывается при показе этого вида"""
@@ -2471,7 +3398,10 @@ class MenuView(arcade.View):
     def on_draw(self):
         """Отрисовка меню"""
         self.clear()
-        arcade.draw_texture_rect(self.background_texture,
+
+        # Рисуем фон
+        if self.background_texture:
+            arcade.draw_texture_rect(self.background_texture,
                                      arcade.rect.XYWH(self.window.width // 2,
                                                       self.window.height // 2,
                                                       self.window.width,
@@ -2490,6 +3420,17 @@ class MenuView(arcade.View):
             bold=True
         )
 
+        # Подзаголовок с версией
+        arcade.draw_text(
+            "v1.0 - Коллекционная карточная RPG",
+            self.window.width // 2,
+            self.window.height * 0.8,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
         # Рисуем все кнопки
         for button in self.buttons:
             button.draw()
@@ -2499,7 +3440,7 @@ class MenuView(arcade.View):
             arcade.draw_text(
                 self.status_text,
                 self.window.width // 2,
-                self.window.height * 0.2,
+                self.window.height * 0.1,
                 arcade.color.WHITE,
                 24,
                 anchor_x="center",
@@ -2510,7 +3451,7 @@ class MenuView(arcade.View):
         arcade.draw_text(
             "Нажмите на кнопку для выбора действия",
             self.window.width // 2,
-            self.window.height * 0.1,
+            self.window.height * 0.05,
             arcade.color.LIGHT_GRAY,
             16,
             anchor_x="center",
@@ -2534,12 +3475,23 @@ class MenuView(arcade.View):
                         self.status_text = "Загрузка игры..."
                         # Создаем и показываем игровой экран с предопределенной картой
                         x, y = DUNGEON_MAP['player_start']
-                        game_view = GameView(x, y, self.element, self.level)
+                        game_view = GameView(x, y)
                         self.window.show_view(game_view)
+
+
+                    elif btn.text == "Колода":
+
+                        self.status_text = "Редактор колоды..."
+
+                        deck_builder_view = DeckBuilderView(self.background_texture)
+
+                        self.window.show_view(deck_builder_view)
 
                     elif btn.text == "Настройки":
                         self.status_text = "Настройки открыты"
                         # Здесь можно добавить переход к экрану настроек
+                        # settings_view = SettingsView(self.background_texture)
+                        # self.window.show_view(settings_view)
 
                     elif btn.text == "Выход":
                         self.status_text = "Выход из игры..."
