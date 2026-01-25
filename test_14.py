@@ -588,8 +588,8 @@ class ShopScreenView(arcade.View):
         selected_cards = []
         for i in range(count):
             select = random.sample(self.all_cards, 1)[0]
-            while select in CURRENT_COLODA:
-                 select = random.sample(self.all_cards, 1)[0]
+            """while select in CURRENT_COLODA:
+                 select = random.sample(self.all_cards, 1)[0]"""
             selected_cards.append(select)
         return selected_cards
 
@@ -1938,7 +1938,8 @@ class CardGameView(arcade.View):
         self.arm = []
         for i in range(5):
             if len(self.coloda) == 0:
-                self.coloda = [c for c in self.deck]
+                for c in self.deck:
+                    self.coloda.append(c)
                 self.deck = []
             card = random.choice(self.coloda)
             self.arm.append(card)
@@ -2065,6 +2066,12 @@ class CardGameView(arcade.View):
         """Обновление логики игры"""
         for card in self.cards:
             card.update()
+        for mob in self.mobs:
+            mob.update()
+        if all(mob.end_animation for mob in self.mobs) and self.mobs:
+            for mob in self.mobs:
+                mob.end_animation = False
+            self.continue_enemy_turn()
 
         # Обновляем эмиттеры урона и исцеления
         self.damage_emitter.update(delta_time)
@@ -2153,7 +2160,7 @@ class CardGameView(arcade.View):
                                     self.heal_emitter.add_damage(
                                         heal_pos[0],
                                         heal_pos[1],
-                                        f"-{heal_amount}",
+                                        f"{heal_amount}",
                                         False  # Можно сделать отдельный цвет для исцеления
                                     )
                                     # Меняем цвет на красный для исцеления
@@ -2312,12 +2319,13 @@ class CardGameView(arcade.View):
         for card in self.arm:
             self.deck.append(card)
         self.arm = []
-        self.cards = []
         self.is_player_turn = False
         self.enemy_turn()
 
     def new_turn(self):
+        print(len(self.coloda), len(self.deck))
         self.turn_number += 1
+        self.cards = []
         self.create_cards_on_table()
 
     def enemy_turn(self):
@@ -2325,42 +2333,7 @@ class CardGameView(arcade.View):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         if enemies:
             for enemy in enemies:
-                damage = enemy.attack()
-                print(f"{enemy.name} атакует игрока на {damage} урона!")
-
-                # Добавляем частицу урона игроку
-                damage_pos = self.player.get_damage_position()
-                self.damage_emitter.add_damage(
-                    damage_pos[0],
-                    damage_pos[1],
-                    damage,
-                    False
-                )
-                if self.defence:
-                    self.defence[0][1] -= damage
-                    self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
-                    if self.defence[0][1] <= 0:
-                        self.defence.remove(self.defence[0])
-                    if self.defence:
-                        self.defence_amount = sum([i[1] for i in self.defence])
-                    else:
-                        self.defence_amount = 0
-                else:
-                    self.player.take_damage(damage)
-                if self.player.current_hp <= 0:
-                    print("Игрок повержен! Показываем экран смерти.")
-
-                    # Создаем и показываем экран смерти
-                    death_screen = DeathScreenView(self.element, self.level)
-                    # Восстанавливаем размер окна
-                    self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    self.window.show_view(death_screen)
-                    return
-
-            self.is_player_turn = True
-            self.defence = []
-            self.defence_amount = 0
-            self.new_turn()
+                enemy.start_animation()
         else:
             # Создаем и показываем экран смерти
             win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
@@ -2368,6 +2341,46 @@ class CardGameView(arcade.View):
             self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
             self.window.show_view(win_screen)
             return
+
+    def continue_enemy_turn(self):
+        enemies = [mob for mob in self.mobs if mob.is_alive]
+        for enemy in enemies:
+            damage = enemy.attack()
+            print(f"{enemy.name} атакует игрока на {damage} урона!")
+            # Добавляем частицу урона игроку
+            damage_pos = self.player.get_damage_position()
+            self.damage_emitter.add_damage(
+                damage_pos[0],
+                damage_pos[1],
+                damage,
+                False
+            )
+            if self.defence:
+                self.defence[0][1] -= damage
+                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+                if self.defence[0][1] <= 0:
+                    self.defence.remove(self.defence[0])
+                if self.defence:
+                    self.defence_amount = sum([i[1] for i in self.defence])
+                else:
+                    self.defence_amount = 0
+            else:
+                self.player.take_damage(damage)
+            if self.player.current_hp <= 0:
+                print("Игрок повержен! Показываем экран смерти.")
+
+                # Создаем и показываем экран смерти
+                death_screen = DeathScreenView(self.element, self.level)
+                # Восстанавливаем размер окна
+                self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+                self.window.show_view(death_screen)
+                return
+
+        if all(enemy.end_animation is False for enemy in self.mobs if enemy.is_alive):
+            self.is_player_turn = True
+            self.defence = []
+            self.defence_amount = 0
+            self.new_turn()
 
 
 # --- Класс меню ---

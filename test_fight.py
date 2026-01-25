@@ -524,7 +524,7 @@ class Slime(Mob):
             height = 35
 
         # Загружаем изображение слизня
-        image_path = "images/Texture2D/slime_1.png"
+        image_path = "images/Mobs/mini_slime_1.jpg"
 
         # Вызываем конструктор родительского класса
         super().__init__(name, image_path, max_hp, damage, x, y, width, height)
@@ -538,6 +538,15 @@ class Slime(Mob):
         # Добавляем детали для отрисовки (если изображение не загрузится)
         self.eye_color = arcade.color.WHITE
         self.pupil_color = arcade.color.BLACK
+        self.is_animated = False
+        self.animation_frame = 0
+        self.animation_timer = 0
+        self.texture_change_delay = 0.2
+        self.textures = []
+        self.end_animation = False
+        for i in range(1, 10):
+            texture = arcade.load_texture(f"images/Mobs/mini_slime_{i}.jpg")
+            self.textures.append(texture)
 
     def draw_placeholder(self):
         """Отрисовка слизня с деталями (если изображение не загрузилось)"""
@@ -623,6 +632,20 @@ class Slime(Mob):
             arcade.color.WHITE
         )
 
+    def update(self, delta_time: float = 1/60):
+        if self.is_animated:
+            self.animation_timer += delta_time
+            if self.animation_timer > self.texture_change_delay:
+                self.animation_timer = 0
+                self.animation_frame += 1
+                if self.animation_frame >= 9:
+                    self.animation_frame = 0
+                    self.is_animated = False
+                    self.end_animation = True
+                self.image = self.textures[self.animation_frame]
+        else:
+            self.image = self.textures[self.animation_frame]
+
     def get_info(self):
         """Возвращает информацию о слизне"""
         return {
@@ -642,6 +665,10 @@ class Slime(Mob):
     def get_damage_position(self):
         """Возвращает позицию для отображения урона"""
         return self.last_damage_position
+
+    def start_animation(self):
+        self.is_animated = True
+        print(self.is_animated, 13214)
 
 
 class Fight_player:
