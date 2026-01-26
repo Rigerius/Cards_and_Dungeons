@@ -143,15 +143,6 @@ def get_current_coloda_count():
     return count
 
 
-# Инициализируем базу данных при импорте модуля
-if __name__ != "__main__":
-    # Проверяем, существует ли файл базы данных
-    if not os.path.exists('database/database.db'):
-        print("Внимание: Файл database.db не найден!")
-    else:
-        init_database()
-
-
 def get_cards_by_element(element_type):
     """Получить карты определенного типа (стихии)"""
     con = sqlite3.connect('database/database.db')
