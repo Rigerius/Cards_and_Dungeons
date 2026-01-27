@@ -19,13 +19,12 @@ MONEY = 0
 DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
+CARDS_LIST = cards_list()
 CURRENT_COLODA = CurrentColoda()
-CARDS_LIST = []
-if len(CURRENT_COLODA) < 11:
+if len(CARDS_LIST) < 15:
     start_coloda()
+    init_current_coloda()
     CURRENT_COLODA = CurrentColoda()
-print(CURRENT_COLODA)
-
 
 class DeathScreenView(arcade.View):
     """Окно смерти с случайными фразами"""
@@ -962,7 +961,7 @@ class DeckBuilderView(arcade.View):
         self.all_cards = []  # Все карты по стихиям
         self.selected_cards = []  # Список выбранных карт (id)
         self.current_page = 0  # Текущая страница (стихия)
-        self.total_pages = 5  # 5 стихий
+        self.total_pages = 7  # 7 стихий
         self.card_buttons = []  # Кнопки карт на текущей странице
         self.setup()
 
@@ -1044,7 +1043,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_cards_by_element, get_element_name
 
             self.all_cards = []
-            for i in range(5):  # 5 стихий
+            for i in range(7):  # 7 стихий
                 element_name = get_element_name(i)
                 element_cards = get_cards_by_element(element_name)
                 self.all_cards.append(element_cards)
@@ -1121,7 +1120,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_element_display_name
             return get_element_display_name(self.current_page)
         except:
-            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ']
+            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ', 'СВЕТ', "ТЬМА"]
             return element_names[self.current_page] if self.current_page < len(element_names) else 'НЕИЗВЕСТНО'
 
     def update_confirm_button(self):
@@ -1143,14 +1142,13 @@ class DeckBuilderView(arcade.View):
             self.confirm_button.hover_color = arcade.color.GRAY
 
     def toggle_card_selection(self, card_id):
-        """Добавить/удалить карту из выбранных"""
         if card_id in self.selected_cards:
             self.selected_cards.remove(card_id)
             self.selected_card_details = None
         else:
-            # Проверяем, не превышен ли лимит
-            if len(self.selected_cards) < 15:  # Увеличили лимит до 15
-                self.selected_cards.append(card_id)
+            if len(self.selected_cards) < 15:
+                if self.card_buttons[card_id - 10 *((card_id - 1) // 10) - 1].is_opened:
+                    self.selected_cards.append(card_id)
 
         # Обновляем состояние кнопок
         for card_button in self.card_buttons:
@@ -1159,6 +1157,7 @@ class DeckBuilderView(arcade.View):
         self.update_confirm_button()
 
     def confirm_deck(self):
+        global CURRENT_COLODA
         """Подтвердить выбранную колоду"""
         if len(self.selected_cards) != 15:
             return False
@@ -1166,6 +1165,7 @@ class DeckBuilderView(arcade.View):
         try:
             from cards_test_1 import update_current_coloda
             update_current_coloda(self.selected_cards)
+            CURRENT_COLODA = CurrentColoda()
             return True
         except Exception as e:
             print(f"Ошибка обновления колоды: {e}")
@@ -1430,20 +1430,36 @@ class CardButton:
         self.card_data = card_data
         self.is_selected = is_selected
         self.is_hovered = False
+        if card_data['id'] in [i['id'] for i in CARDS_LIST]:
+            self.is_opened = True
+        else:
+            self.is_opened = False
 
-        # Определяем цвет в зависимости от стихии (ID 1-10: огонь, 11-20: вода и т.д.)
         element_colors = {
-            0: arcade.color.LIGHT_SALMON,  # Огонь (ID 1-10)
-            1: arcade.color.BLUE,  # Вода (ID 11-20)
-            2: arcade.color.LIGHT_GREEN,  # Камень (ID 21-30)
-            3: arcade.color.LIGHT_GRAY,  # Ветер (ID 31-40)
-            4: arcade.color.ELECTRIC_PURPLE  # Молния (ID 41-50)
+            0: arcade.color.LIGHT_SALMON,
+            1: arcade.color.BLUE,
+            2: arcade.color.LIGHT_GREEN,
+            3: arcade.color.LIGHT_GRAY,
+            4: arcade.color.ELECTRIC_PURPLE,
+            5: (230, 226, 122),
+            6: (92, 58, 126)
+        }
+
+        block_colors = {
+            0: (145, 115, 115),
+            1: (115, 124, 145),
+            2: (105, 140, 106),
+            3: (112, 112, 112),
+            4: (131, 112, 137),
+            5: (173, 169, 138),
+            6: (99, 86, 113)
         }
 
         element_index = (card_data['id'] - 1) // 10
         self.color = element_colors.get(element_index, arcade.color.DARK_BLUE_GRAY)
         self.hover_color = arcade.color.WHITE
         self.selected_color = arcade.color.GOLD
+        self.blocked_color = block_colors.get(element_index, arcade.color.GRAY)
 
         self.name_text = []
         for p, t in enumerate(card_data['name'].split('/')):
@@ -1481,7 +1497,9 @@ class CardButton:
     def draw(self):
         """Отрисовывает кнопку карты"""
         # Основной цвет
-        if self.is_selected:
+        if not self.is_opened:
+            current_color = self.blocked_color
+        elif self.is_selected:
             current_color = self.selected_color
         elif self.is_hovered:
             current_color = self.hover_color
@@ -2442,8 +2460,8 @@ class CardGameView(arcade.View):
         self.element = element
         self.level = level
         self.room = room
-        self.SCREEN_WIDTH = 800
-        self.SCREEN_HEIGHT = 600
+        self.SCREEN_WIDTH = int(800 * 1.28)  # 1024
+        self.SCREEN_HEIGHT = int(600 * 1.28)  # 768
         self.TITLE = "Карточная игра"
 
         self.cards = []
@@ -2483,7 +2501,7 @@ class CardGameView(arcade.View):
         except:
             print("Не удалось загрузить фоновые текстуры")
 
-        self.end_turn_button = EndTurnButton(700, 550)
+        self.end_turn_button = EndTurnButton(int(700 * 1.28), int(550 * 1.28))  # 896, 704
 
         # Создаем 5 карт на игровом столе
         self.create_coloda()
@@ -2495,7 +2513,11 @@ class CardGameView(arcade.View):
         self.mobs.clear()
 
         # Создаем слизня в центре правой части экрана
-        enemies_pos = [(550, 400), (675, 325), (550, 250)]
+        enemies_pos = [
+            (int(550 * 1.28), int(400 * 1.28)),  # 704, 512
+            (int(675 * 1.28), int(325 * 1.28)),  # 864, 416
+            (int(550 * 1.28), int(250 * 1.28))   # 704, 320
+        ]
         enemies_types = ["small", "large", "medium"]
 
         # Создаем слизня
@@ -2514,16 +2536,16 @@ class CardGameView(arcade.View):
     def create_cards_on_table(self):
         """Создает 5 карт на игровом столе"""
         # Параметры стола
-        table_height = 150  # Высота стола
+        table_height = int(150 * 1.28)  # 192
 
         # Параметры карт (увеличенные размеры)
-        card_width = 130  # Увеличенная ширина
-        card_height = 220  # Увеличенная высота
-        card_spacing = 5  # Увеличенное расстояние между картами
+        card_width = int(130 * 1.28)  # 166
+        card_height = int(220 * 1.28)  # 282
+        card_spacing = int(5 * 1.28)  # 6
 
         # Позиционируем карты внизу экрана
-        bottom_margin = 20  # Отступ от нижнего края
-        cards_y = bottom_margin + table_height / 2 - 80  # Позиция карт
+        bottom_margin = int(20 * 1.28)  # 26
+        cards_y = bottom_margin + table_height / 2 - int(80 * 1.28)  # Позиция карт
 
         # Вычисляем начальную позицию для первой карты
         total_cards_width = 5 * card_width + 4 * card_spacing
@@ -2566,8 +2588,8 @@ class CardGameView(arcade.View):
                 hover_color=colors[color],
                 text_color=arcade.color.BLACK,
                 description_color=arcade.color.DARK_BROWN,
-                font_size=12,
-                description_font_size=9,
+                font_size=int(12 * 1.28),  # 15
+                description_font_size=int(9 * 1.28),  # 12
                 dict=self.arm[i]
             )
 
@@ -2598,13 +2620,13 @@ class CardGameView(arcade.View):
 
         # Рисуем игровой стол
         table_width = self.width * 0.9
-        table_height = 150
+        table_height = int(150 * 1.28)  # 192
         table_x = self.width // 2
         table_y = table_height // 2
 
         table_rect = arcade.rect.XYWH(table_x, table_y, table_width, table_height)
         arcade.draw_rect_filled(table_rect, arcade.color.DARK_BROWN)
-        arcade.draw_rect_outline(table_rect, arcade.color.BLACK, border_width=3)
+        arcade.draw_rect_outline(table_rect, arcade.color.BLACK, border_width=int(3 * 1.28))  # 4
 
         # Рисуем игрока
         if self.player:
@@ -2627,10 +2649,10 @@ class CardGameView(arcade.View):
 
         arcade.draw_text(
             f"ХОД: {self.turn_number}",
-            700,
-            500,
+            int(700 * 1.28),  # 896
+            int(500 * 1.28),  # 640
             arcade.color.GOLD,
-            16,
+            int(16 * 1.28),  # 20
             anchor_x="center",
             anchor_y="center",
             bold=True
@@ -2638,20 +2660,20 @@ class CardGameView(arcade.View):
 
         arcade.draw_text(
             f"Колода: {len(self.coloda)} | Сброс: {len(self.deck)}",
-            400,
-            560,
+            int(400 * 1.28),  # 512
+            int(560 * 1.28),  # 717
             arcade.color.LIGHT_GRAY,
-            12,
+            int(12 * 1.28),  # 15
             anchor_x="center",
             anchor_y="center"
         )
 
         arcade.draw_text(
             f"Защита: {self.defence_amount}",
-            400,
-            530,
+            int(400 * 1.28),  # 512
+            int(530 * 1.28),  # 678
             arcade.color.LIGHT_GRAY,
-            12,
+            int(12 * 1.28),  # 15
             anchor_x="center",
             anchor_y="center"
         )
@@ -2851,6 +2873,16 @@ class CardGameView(arcade.View):
                 if flag == 0:
                     card.is_playable = False
                     card.is_mana = False
+
+        if self.player.current_hp <= 0:
+            print("Игрок повержен! Показываем экран смерти.")
+
+            # Создаем и показываем экран смерти
+            death_screen = DeathScreenView(self.element, self.level)
+            # Восстанавливаем размер окна
+            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+            self.window.show_view(death_screen)
+            return
 
         if self.end_turn_button and self.end_turn_button.on_release():
             print("Кнопка 'Конец хода' нажата!")
