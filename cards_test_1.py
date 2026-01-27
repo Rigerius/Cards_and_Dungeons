@@ -90,30 +90,6 @@ def update_current_coloda(card_ids):
     print(f"Колода обновлена. Добавлено {len(card_ids)} карт.")
 
 
-def start_coloda():
-    con = sqlite3.connect('database/database.db')
-    cur = con.cursor()
-
-    # Проверяем, есть ли уже карты в CurrentColoda
-    coloda_count = cur.execute('''SELECT COUNT(*) FROM CurrentColoda''').fetchone()[0]
-
-    # Если колода пуста, добавляем 10 случайных карт
-    if coloda_count == 0:
-        all_cards = cur.execute('''SELECT id FROM Cards''').fetchall()
-        if all_cards:
-            # Выбираем 10 случайных карт
-            selected_cards = random.sample([card[0] for card in all_cards], min(10, len(all_cards)))
-
-            for card_id in selected_cards:
-                card_name = cur.execute('''SELECT name FROM Cards WHERE id = ?''', (card_id,)).fetchone()[0]
-                cur.execute('''INSERT INTO CurrentColoda (id, name) VALUES (?, ?)''',
-                            (card_id, card_name))
-                print(f"Добавлена карта: {card_id} - {card_name}")
-
-    con.commit()
-    con.close()
-
-
 def CurrentColoda():
     con = sqlite3.connect('database/database.db')
     cur = con.cursor()
@@ -150,11 +126,13 @@ def get_cards_by_element(element_type):
 
     # Определяем диапазон ID для каждой стихии (по 10 карт на стихию)
     element_ranges = {
-        'fire': (1, 10),  # Огонь
-        'water': (11, 20),  # Вода
-        'stone': (21, 30),  # Камень
-        'wind': (31, 40),  # Ветер
-        'lightning': (41, 50)  # Молния
+        'fire': (1, 10),
+        'water': (11, 20),
+        'stone': (21, 30),
+        'wind': (31, 40),
+        'lightning': (41, 50),
+        'light': (51, 60),
+        'dark': (61, 70)
     }
 
     if element_type in element_ranges:
@@ -186,13 +164,14 @@ def get_cards_by_element(element_type):
 
 
 def get_element_name(element_id):
-    """Получить название стихии по номеру"""
     elements = {
-        0: 'fire',  # Огонь
-        1: 'water',  # Вода
-        2: 'stone',  # Камень
-        3: 'wind',  # Ветер
-        4: 'lightning'  # Молния
+        0: 'fire',
+        1: 'water',
+        2: 'stone',
+        3: 'wind',
+        4: 'lightning',
+        5: 'light',
+        6: 'dark'
     }
     return elements.get(element_id, 'unknown')
 
@@ -204,7 +183,9 @@ def get_element_display_name(element_id):
         1: 'ВОДА',
         2: 'КАМЕНЬ',
         3: 'ВЕТЕР',
-        4: 'МОЛНИЯ'
+        4: 'МОЛНИЯ',
+        5: "СВЕТ",
+        6: "ТЬМА"
     }
     return display_names.get(element_id, 'НЕИЗВЕСТНО')
 
@@ -212,22 +193,47 @@ def get_element_display_name(element_id):
 def start_coloda():
     con = sqlite3.connect('database/database.db')
     cur = con.cursor()
-
-    # Проверяем, есть ли уже карты в CurrentColoda
-    coloda_count = cur.execute('''SELECT COUNT(*) FROM CurrentColoda''').fetchone()[0]
-
-    # Если колода пуста, добавляем 15 случайных карт
-    if coloda_count == 0:
-        all_cards = cur.execute('''SELECT id FROM Cards''').fetchall()
-        if all_cards:
-            # Выбираем 15 случайных карт
-            selected_cards = random.sample([card[0] for card in all_cards], min(15, len(all_cards)))
-
-            for card_id in selected_cards:
-                card_name = cur.execute('''SELECT name FROM Cards WHERE id = ?''', (card_id,)).fetchone()[0]
-                cur.execute('''INSERT INTO CurrentColoda (id, name) VALUES (?, ?)''',
-                            (card_id, card_name))
-                print(f"Добавлена карта: {card_id} - {card_name}")
-
+    coloda_list = [i[0] for i in cur.execute('''SELECT name FROM CardsList''').fetchall()]
+    card = 'Снаряд пламени'
+    card_id = None
+    while card in coloda_list:
+        id = random.randint(0, 69)
+        card_id, card = cur.execute('''SELECT id, name FROM Cards WHERE id = ?''', (id,)).fetchone()
+    cur.execute('''INSERT INTO CardsList (id, name) VALUES (?, ?)''', (card_id, card))
     con.commit()
+
+
+def init_current_coloda():
+    con = sqlite3.connect('database/database.db')
+    cur = con.cursor()
+    coloda_list = [i for i in cur.execute('''SELECT id, name FROM CardsList''').fetchall()]
+    cur.execute('''DELETE FROM CurrentColoda''')
+    for i in coloda_list:
+        cur.execute('''INSERT INTO CurrentColoda (id, name) VALUES (?, ?)''', (i[0], i[1]))
+    con.commit()
+
+
+def cards_list():
+    con = sqlite3.connect('database/database.db')
+    cur = con.cursor()
+    card_ids = [i[0] for i in cur.execute('''SELECT id FROM CardsList''').fetchall()]
     con.close()
+    coloda = []
+    for card_id in card_ids:
+        card = create_card(card_id)
+        if card:
+            coloda.append(card)
+
+    return coloda
+
+
+def get_new_card():
+    con = sqlite3.connect('database/database.db')
+    cur = con.cursor()
+    all_cards = get_all_cards()
+    cards = cards_list()
+    result = [i for i in all_cards if i not in cards]
+    card = random.choice(result)
+    cur.execute('''INSERT INTO CardsList (id, name) VALUES (?, ?)''', (card['id'], card['name']))
+    con.commit()
+    return card
