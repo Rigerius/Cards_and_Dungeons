@@ -7,24 +7,21 @@ from dungeons import *
 from test_fight import *
 from emitter_damage import *
 
-# Константы для меню
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 TITLE = "Игра с меню и спрайтами"
 TILE_SIZE = 64
 PLAYER_SPEED = 10
 MONEY = 0
-
-# Предопределенная карта (координаты квадратов)
 DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
+CARDS_LIST = cards_list()
 CURRENT_COLODA = CurrentColoda()
-CARDS_LIST = []
-if len(CURRENT_COLODA) < 11:
+if len(CARDS_LIST) < 15:
     start_coloda()
+    init_current_coloda()
     CURRENT_COLODA = CurrentColoda()
-print(CURRENT_COLODA)
 
 
 class PauseScreenView(arcade.View):
@@ -247,13 +244,14 @@ class PauseScreenView(arcade.View):
 
     def restart_game(self):
         """Перезапуск игры"""
-        print("Перезапуск игры...")
+        """print("Перезапуск игры...")
         # Создаем новую игру с теми же параметрами
-        x, y = self.game_view.player_sprite.center_x, self.game_view.player_sprite.center_y
+        x, y = self.game_view.player.x, self.game_view.player_sprite.center_y
         element = self.game_view.element
         level = self.game_view.level
         game_view = GameView(x, y, element, level)
-        self.window.show_view(game_view)
+        self.window.show_view(game_view)"""
+        pass
 
     def return_to_menu(self):
         """Возврат в главное меню"""
@@ -269,6 +267,7 @@ class PauseScreenView(arcade.View):
         """Выход из игры"""
         print("Выход из игры...")
         arcade.close_window()
+
 
 class DeathScreenView(arcade.View):
     """Окно смерти с случайными фразами"""
@@ -576,25 +575,33 @@ class WinScreenView(arcade.View):
     """Окно победы"""
 
     def __init__(self, x, y, element, level, room, background_texture=None):
-        global MONEY
+        global MONEY, CARDS_LIST
         super().__init__()
         self.background_texture = background_texture
         self.element = element
         self.level = level
         self.coords = (x, y)
         self.room = room
+        self.new_card = None
         if self.level == 'первый':
             self.reward = random.randrange(14, 31)
         elif self.level == "второй":
             self.reward = random.randrange(24, 51)
         elif self.level == 'третий':
             self.reward = random.randrange(40, 71)
+        if self.room == '_':
+            self.reward = int(self.reward * (random.randrange(15, 25) * 0.1))
+            if ((random.randrange(1, 101) <= 100 and self.level in ['первый', 'второй'])
+                or (random.randrange(1, 101) <= 200 and self.level == 'третий')):
+                CARDS_LIST = cards_list()
+                self.new_card = get_new_card()
+                self.new_card = " ".join(self.new_card['name'].split('/'))
         MONEY += self.reward
 
 
         # Кнопка для перехода в магазин
         self.shop_button = Button(
-            x=self.window.width // 2 + 140,
+            x=self.window.width // 2,
             y=50,
             width=280,
             height=60,
@@ -726,6 +733,17 @@ class WinScreenView(arcade.View):
                 anchor_x="center",
                 anchor_y="center"
             )
+
+            if self.new_card is not None:
+                arcade.draw_text(
+                    f"Получена новая карта: {self.new_card}!",
+                    self.window.width // 2,
+                    self.window.height * 0.35,
+                    (31, 163, 40),
+                    24,
+                    anchor_x="center",
+                    anchor_y="center"
+                )
 
     def on_update(self, delta_time):
         """Обновление анимации"""
@@ -1197,15 +1215,13 @@ class ShopCard:
 
 
 class DeckBuilderView(arcade.View):
-    """Редактор колоды - выбор 15 карт из доступных по стихиям"""
-
     def __init__(self, background_texture=None):
         super().__init__()
         self.background_texture = background_texture
         self.all_cards = []  # Все карты по стихиям
         self.selected_cards = []  # Список выбранных карт (id)
         self.current_page = 0  # Текущая страница (стихия)
-        self.total_pages = 5  # 5 стихий
+        self.total_pages = 7  # 7 стихий
         self.card_buttons = []  # Кнопки карт на текущей странице
         self.setup()
 
@@ -1287,7 +1303,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_cards_by_element, get_element_name
 
             self.all_cards = []
-            for i in range(5):  # 5 стихий
+            for i in range(7):  # 7 стихий
                 element_name = get_element_name(i)
                 element_cards = get_cards_by_element(element_name)
                 self.all_cards.append(element_cards)
@@ -1364,7 +1380,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_element_display_name
             return get_element_display_name(self.current_page)
         except:
-            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ']
+            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ', 'СВЕТ', "ТЬМА"]
             return element_names[self.current_page] if self.current_page < len(element_names) else 'НЕИЗВЕСТНО'
 
     def update_confirm_button(self):
@@ -1386,14 +1402,13 @@ class DeckBuilderView(arcade.View):
             self.confirm_button.hover_color = arcade.color.GRAY
 
     def toggle_card_selection(self, card_id):
-        """Добавить/удалить карту из выбранных"""
         if card_id in self.selected_cards:
             self.selected_cards.remove(card_id)
             self.selected_card_details = None
         else:
-            # Проверяем, не превышен ли лимит
-            if len(self.selected_cards) < 15:  # Увеличили лимит до 15
-                self.selected_cards.append(card_id)
+            if len(self.selected_cards) < 15:
+                if self.card_buttons[card_id - 10 *((card_id - 1) // 10) - 1].is_opened:
+                    self.selected_cards.append(card_id)
 
         # Обновляем состояние кнопок
         for card_button in self.card_buttons:
@@ -1402,6 +1417,7 @@ class DeckBuilderView(arcade.View):
         self.update_confirm_button()
 
     def confirm_deck(self):
+        global CURRENT_COLODA
         """Подтвердить выбранную колоду"""
         if len(self.selected_cards) != 15:
             return False
@@ -1409,6 +1425,7 @@ class DeckBuilderView(arcade.View):
         try:
             from cards_test_1 import update_current_coloda
             update_current_coloda(self.selected_cards)
+            CURRENT_COLODA = CurrentColoda()
             return True
         except Exception as e:
             print(f"Ошибка обновления колоды: {e}")
@@ -1673,20 +1690,36 @@ class CardButton:
         self.card_data = card_data
         self.is_selected = is_selected
         self.is_hovered = False
+        if card_data['id'] in [i['id'] for i in CARDS_LIST]:
+            self.is_opened = True
+        else:
+            self.is_opened = False
 
-        # Определяем цвет в зависимости от стихии (ID 1-10: огонь, 11-20: вода и т.д.)
         element_colors = {
-            0: arcade.color.LIGHT_SALMON,  # Огонь (ID 1-10)
-            1: arcade.color.BLUE,  # Вода (ID 11-20)
-            2: arcade.color.LIGHT_GREEN,  # Камень (ID 21-30)
-            3: arcade.color.LIGHT_GRAY,  # Ветер (ID 31-40)
-            4: arcade.color.ELECTRIC_PURPLE  # Молния (ID 41-50)
+            0: arcade.color.LIGHT_SALMON,
+            1: arcade.color.BLUE,
+            2: arcade.color.LIGHT_GREEN,
+            3: arcade.color.LIGHT_GRAY,
+            4: arcade.color.ELECTRIC_PURPLE,
+            5: (230, 226, 122),
+            6: (92, 58, 126)
+        }
+
+        block_colors = {
+            0: (145, 115, 115),
+            1: (115, 124, 145),
+            2: (105, 140, 106),
+            3: (112, 112, 112),
+            4: (131, 112, 137),
+            5: (173, 169, 138),
+            6: (99, 86, 113)
         }
 
         element_index = (card_data['id'] - 1) // 10
         self.color = element_colors.get(element_index, arcade.color.DARK_BLUE_GRAY)
         self.hover_color = arcade.color.WHITE
         self.selected_color = arcade.color.GOLD
+        self.blocked_color = block_colors.get(element_index, arcade.color.GRAY)
 
         self.name_text = []
         for p, t in enumerate(card_data['name'].split('/')):
@@ -1724,7 +1757,9 @@ class CardButton:
     def draw(self):
         """Отрисовывает кнопку карты"""
         # Основной цвет
-        if self.is_selected:
+        if not self.is_opened:
+            current_color = self.blocked_color
+        elif self.is_selected:
             current_color = self.selected_color
         elif self.is_hovered:
             current_color = self.hover_color
@@ -2611,7 +2646,6 @@ class GameView(arcade.View):
         elif key == arcade.key.DOWN or key == arcade.key.S:
             self.down_pressed = True
         elif key == arcade.key.ESCAPE:
-            # ESC вызывает паузу в игре (добавленная строка)
             self.show_pause_screen()
         elif key == arcade.key.PLUS or key == arcade.key.EQUAL:
             self.player_sprite.speed = min(self.player_sprite.speed + 1, 15)
@@ -2622,7 +2656,7 @@ class GameView(arcade.View):
         elif key == arcade.key.C:
             # Мгновенное центрирование камеры
             self._center_camera_on_player(instant=True)
-        elif key == arcade.key.SPACE:
+        elif key == arcade.key.T:
             self._teleport_player()
 
     def _teleport_player(self):
@@ -2678,7 +2712,6 @@ class GameView(arcade.View):
         self.window.show_view(menu_view)
 
     def show_pause_screen(self):
-        """Показывает экран паузы"""
         pause_view = PauseScreenView(self)
         self.window.show_view(pause_view)
 
@@ -2797,7 +2830,10 @@ class CardGameView(arcade.View):
             arcade.color.BLUE,
             arcade.color.LIGHT_GREEN,
             arcade.color.LIGHT_GRAY,
-            arcade.color.LIGHT_PINK
+            arcade.color.LIGHT_PINK,
+            (230, 226, 122),
+            (92, 58, 126)
+
         ]
 
         for i in range(5):
@@ -2935,7 +2971,6 @@ class CardGameView(arcade.View):
             self.create_random_slime()
             print("Нажата клавиша P - создан новый случайный слизень!")
         elif key == arcade.key.ESCAPE:
-            # ESC вызывает паузу в карточной игре (измененная строка)
             self.show_pause_screen()
 
     def on_mouse_motion(self, x, y, dx, dy):
@@ -3237,11 +3272,8 @@ class CardGameView(arcade.View):
             self.new_turn()
 
     def show_pause_screen(self):
-        """Показывает экран паузы"""
         pause_view = PauseScreenView(self)
         self.window.show_view(pause_view)
-
-
 
 
 # --- Класс меню ---
