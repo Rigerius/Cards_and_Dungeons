@@ -1,0 +1,553 @@
+class CardGameView(arcade.View):
+    def __init__(self, x, y, element, level, room):
+        super().__init__()
+        self.coords = (x, y)
+        self.element = element
+        self.level = level
+        self.room = room
+        self.SCREEN_WIDTH = 800
+        self.SCREEN_HEIGHT = 600
+        self.TITLE = "Карточная игра"
+
+        self.cards = []
+        self.deck = []
+        self.defence = []
+        self.defence_amount = 0
+        self.player = None
+        self.mobs = []
+        self.background_texture = None
+        self.midground_texture = None
+        self.current_slime = None
+        self.window.set_size(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+        self.end_turn_button = None
+        self.turn_number = 1
+        self.is_player_turn = True
+        self.deaded = []
+
+        # Добавляем эмиттер урона
+        self.damage_emitter = DamageEmitter()
+        self.heal_emitter = DamageEmitter()  # Для исцеления
+
+        self.setup()
+
+    def setup(self):
+        """Настройка игры"""
+        # Создаем игрока с указанными параметрами
+        player_image_path = "images/Texture2D/mag_1.png"
+        self.player = Fight_player("Игрок", player_image_path, max_hp=100, max_mana=50)
+
+        # Создаем случайного слизня при запуске
+        self.create_random_slime()
+
+        # Загрузка фоновых текстур
+        try:
+            self.background_texture = arcade.load_texture("images/Texture2D/Unfinished Meal Far Backgroundl.png")
+            self.midground_texture = arcade.load_texture("images/Texture2D/Warrior Statue Mid Background.png")
+        except:
+            print("Не удалось загрузить фоновые текстуры")
+
+        self.end_turn_button = EndTurnButton(700, 550)
+
+        # Создаем 5 карт на игровом столе
+        self.create_coloda()
+        self.create_cards_on_table()
+
+    def create_random_slime(self):
+        """Создание случайного слизня"""
+        # Очищаем список мобов
+        self.mobs.clear()
+
+        # Создаем слизня в центре правой части экрана
+        enemies_pos = [(550, 400), (675, 325), (550, 250)]
+        enemies_types = ["small", "large", "medium"]
+
+        # Создаем слизня
+        for i in range(3):
+            new_slime = Slime(enemies_types[i], enemies_pos[i][0], enemies_pos[i][1])
+            self.mobs.append(new_slime)
+
+            print(f"Создан новый слизень: {new_slime.name}")
+            print(f"Размер: {new_slime.width}x{new_slime.height} пикселей")
+            print(f"Здоровье: {new_slime.current_hp}/{new_slime.max_hp}")
+            print(f"Урон: {new_slime.damage}")
+
+    def create_coloda(self):
+        self.coloda = [i for i in CURRENT_COLODA]
+
+    def create_cards_on_table(self):
+        """Создает 5 карт на игровом столе"""
+        # Параметры стола
+        table_height = 150  # Высота стола
+
+        # Параметры карт (увеличенные размеры)
+        card_width = 130  # Увеличенная ширина
+        card_height = 220  # Увеличенная высота
+        card_spacing = 5  # Увеличенное расстояние между картами
+
+        # Позиционируем карты внизу экрана
+        bottom_margin = 20  # Отступ от нижнего края
+        cards_y = bottom_margin + table_height / 2 - 80  # Позиция карт
+
+        # Вычисляем начальную позицию для первой карты
+        total_cards_width = 5 * card_width + 4 * card_spacing
+        start_x = self.width // 2 - total_cards_width // 2 + card_width // 2
+
+        self.arm = []
+        for i in range(5):
+            if len(self.coloda) == 0:
+                for c in self.deck:
+                    self.coloda.append(c)
+                self.deck = []
+            card = random.choice(self.coloda)
+            self.arm.append(card)
+            self.coloda.remove(card)
+
+        colors = [
+            arcade.color.LIGHT_SALMON,
+            arcade.color.BLUE,
+            arcade.color.LIGHT_GREEN,
+            arcade.color.LIGHT_GRAY,
+            arcade.color.LIGHT_PINK,
+            (230, 226, 122),
+            (92, 58, 126)
+        ]
+
+        for i in range(5):
+            card_x = start_x + i * (card_width + card_spacing)
+            card_y = cards_y  # Карты внизу экрана
+
+            color = (self.arm[i]['id'] - 1) // 10
+
+            # Создаем карту с увеличенными размерами
+            card = Card(
+                x=card_x,
+                y=card_y,
+                width=card_width,
+                height=card_height,
+                text=self.arm[i]['name'],
+                image_path=None,  # Пустая карта
+                description=self.arm[i]['description'],
+                card_color=colors[color],
+                hover_color=colors[color],
+                text_color=arcade.color.BLACK,
+                description_color=arcade.color.DARK_BROWN,
+                font_size=12,
+                description_font_size=9,
+                dict=self.arm[i]
+            )
+
+            self.cards.append(card)
+
+    def on_draw(self):
+        """Отрисовка игры"""
+        self.clear()
+
+        # Рисуем фон если текстуры загружены
+        if self.background_texture:
+            background_rect = arcade.rect.XYWH(
+                self.width // 2,
+                self.height // 2,
+                self.width,
+                self.height
+            )
+            arcade.draw_texture_rect(self.background_texture, background_rect)
+
+        if self.midground_texture:
+            midground_rect = arcade.rect.XYWH(
+                self.width // 2,
+                self.height // 2,
+                self.width,
+                self.height
+            )
+            arcade.draw_texture_rect(self.midground_texture, midground_rect)
+
+        # Рисуем игровой стол
+        table_width = self.width * 0.9
+        table_height = 150
+        table_x = self.width // 2
+        table_y = table_height // 2
+
+        table_rect = arcade.rect.XYWH(table_x, table_y, table_width, table_height)
+        arcade.draw_rect_filled(table_rect, arcade.color.DARK_BROWN)
+        arcade.draw_rect_outline(table_rect, arcade.color.BLACK, border_width=3)
+
+        # Рисуем игрока
+        if self.player:
+            self.player.draw()
+
+        # Рисуем всех мобов
+        for mob in self.mobs:
+            mob.draw()
+
+        # Рисуем частицы урона и исцеления ПОВЕРХ всех объектов
+        self.damage_emitter.draw()
+        self.heal_emitter.draw()
+
+        # Рисуем все карты
+        for card in self.cards:
+            card.draw()
+
+        if self.end_turn_button:
+            self.end_turn_button.draw()
+
+        arcade.draw_text(
+            f"ХОД: {self.turn_number}",
+            700,
+            500,
+            arcade.color.GOLD,
+            16,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        arcade.draw_text(
+            f"Колода: {len(self.coloda)} | Сброс: {len(self.deck)}",
+            400,
+            560,
+            arcade.color.LIGHT_GRAY,
+            12,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        arcade.draw_text(
+            f"Защита: {self.defence_amount}",
+            400,
+            530,
+            arcade.color.LIGHT_GRAY,
+            12,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+    def on_update(self, delta_time):
+        """Обновление логики игры"""
+        for card in self.cards:
+            card.update()
+        for mob in self.mobs:
+            mob.update()
+        if all(mob.end_animation for mob in self.mobs) and self.mobs:
+            for mob in self.mobs:
+                mob.end_animation = False
+            self.continue_enemy_turn()
+
+        # Обновляем эмиттеры урона и исцеления
+        self.damage_emitter.update(delta_time)
+        self.heal_emitter.update(delta_time)
+
+        if self.end_turn_button:
+            self.end_turn_button.is_enabled = (
+                    self.is_player_turn and
+                    self.player.current_mana < 50)
+
+    def on_key_press(self, key, modifiers):
+        """Обработка нажатия клавиш"""
+        if key == arcade.key.P:  # P или русская П
+            self.create_random_slime()
+            print("Нажата клавиша P - создан новый случайный слизень!")
+        elif key == arcade.key.ESCAPE:
+            # Возвращаемся в основную игру
+            x, y = self.coords
+            game_view = GameView(x, y, self.element, self.level)
+            # Восстанавливаем размер окна
+            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+            self.window.show_view(game_view)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        for card in self.cards:
+            card.check_mouse_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        for card in self.cards:
+            if card.check_mouse_hover(x, y):
+                card.on_press()
+        for mob in self.mobs:
+            if mob.check_mouse_hover(x, y):
+                fake_mobs = [m for m in self.mobs]
+                fake_mobs.remove(mob)
+                mob.on_press()
+                for m in fake_mobs:
+                    m.current = 0
+
+        if self.end_turn_button and self.end_turn_button.check_hover(x, y):
+            self.end_turn_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        for card in self.cards:
+            if card.on_release():
+                print(f"Нажата карта: {card.text}")
+                print(f"Описание: {card.description}")
+
+                for i in self.mobs:
+                    if i.current == 1:
+                        self.current_slime = i
+
+                flag = 0
+
+                for c in card.dict['colvo']:
+                    if c == '0':
+                        if "Исцеление" in card.dict['effects'] and self.player and card.is_playable:
+                            if not card.is_mana and card.dict['colvo'].index(c) == 0:
+                                if self.player.use_mana(card.dict['mana']):
+                                    card.is_mana = True
+                                    print(f"Тратится {card.dict['mana']} маны на исцеление!")
+                                else:
+                                    print("Недостаточно маны!")
+                                    flag = 1
+                            if card.is_mana:
+                                a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
+                                heal_amount = random.randrange(a1, a2 + 1)
+                                print(f"Игрок получает {heal_amount} здоровья!")
+
+                                # Добавляем частицу исцеления (зеленый цвет)
+                                if heal_amount >= 0:
+                                    heal_pos = self.player.get_damage_position()
+                                    self.heal_emitter.add_damage(
+                                        heal_pos[0],
+                                        heal_pos[1],
+                                        f"+{heal_amount}",
+                                        False  # Можно сделать отдельный цвет для исцеления
+                                    )
+                                    # Меняем цвет на зеленый для исцеления
+                                    self.heal_emitter.particles[-1].color = arcade.color.LIGHT_GREEN
+                                else:
+                                    heal_pos = self.player.get_damage_position()
+                                    self.heal_emitter.add_damage(
+                                        heal_pos[0],
+                                        heal_pos[1],
+                                        f"{heal_amount}",
+                                        False  # Можно сделать отдельный цвет для исцеления
+                                    )
+                                    # Меняем цвет на красный для исцеления
+                                    self.heal_emitter.particles[-1].color = arcade.color.RED
+
+                                self.player.heal(heal_amount)
+                                card.is_mana = True
+                        elif "Защита" in card.dict['effects'] and self.player and card.is_playable:
+                            if not card.is_mana and card.dict['colvo'].index(c) == 0:
+                                if self.player.use_mana(card.dict['mana']):
+                                    card.is_mana = True
+                                    print(f"Тратится {card.dict['mana']} маны на защиту!")
+                                else:
+                                    print("Недостаточно маны!")
+                                    flag = 1
+                            if card.is_mana:
+                                self.defence.append([card.text, card.dict['damage'][0][0]])
+                                print(self.defence)
+                                self.defence_amount = sum([i[1] for i in self.defence])
+                        else:
+                            flag = 1
+                            break
+                    elif c == '1':
+                        if self.player and (self.current_slime is not None) and card.is_playable:
+                            if not card.is_mana and card.dict['colvo'].index(c) == 0:
+                                if self.player.use_mana(card.dict['mana']):
+                                    card.is_mana = True
+                                    print(f"Тратится {card.dict['mana']} маны на магию!")
+                                else:
+                                    print("Недостаточно маны!")
+                                    flag = 1
+                            if card.is_mana:
+                                if self.player and self.current_slime and self.current_slime.is_alive:
+                                    a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
+                                    damage = random.randrange(a1, a2 + 1)
+                                    self.attack_mob(damage, self.current_slime)
+                                    card.is_mana = True
+                        else:
+                            flag = 1
+                            break
+                    elif "рандом" in c:
+                        if self.player and card.is_playable and "рандом" in c:
+                            if not card.is_mana and card.dict['colvo'].index(c) == 0:
+                                if self.player.use_mana(card.dict['mana']):
+                                    card.is_mana = True
+                                    print(f"Тратится {card.dict['mana']} маны на магию!")
+                                else:
+                                    print("Недостаточно маны!")
+                                    flag = 1
+                            if card.is_mana:
+                                print("Мана успешно потрачена!")
+                                count = int(c.split()[-1])
+                                fake_mobs = [m for m in self.mobs]
+                                if card.dict['colvo'][0] == '1' and self.current_slime:
+                                    fake_mobs.remove(self.current_slime)
+                                for i in range(count):
+                                    if len(fake_mobs) == 0:
+                                        break
+                                    mob = random.choice(fake_mobs)
+                                    a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
+                                    damage = random.randrange(a1, a2 + 1)
+                                    self.attack_mob(damage, mob)
+                                    fake_mobs.remove(mob)
+                                card.is_mana = True
+                        else:
+                            flag = 1
+                            break
+                    elif c == 'все':
+                        if self.player and card.is_playable and c == 'все' and len(self.mobs) != 0:
+                            if not card.is_mana and card.dict['colvo'].index(c) == 0:
+                                if self.player.use_mana(card.dict['mana']):
+                                    card.is_mana = True
+                                    print(f"Тратится {card.dict['mana']} маны на магию!")
+                                else:
+                                    print("Недостаточно маны!")
+                                    flag = 1
+                            if card.is_mana:
+                                print("Мана успешно потрачена!")
+                                a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
+                                damage = random.randrange(a1, a2 + 1)
+                                fake_mobs = [m for m in self.mobs]
+                                if card.dict['colvo'][0] == '1' and self.current_slime:
+                                    fake_mobs.remove(self.current_slime)
+                                for mob in fake_mobs:
+                                    self.attack_mob(damage, mob)
+                                card.is_mana = True
+                        else:
+                            flag = 1
+                            break
+                if len(self.deaded) > 0:
+                    for mob in self.deaded:
+                        self.mobs.remove(mob)
+                    self.deaded = []
+                if flag == 0:
+                    card.is_playable = False
+                    card.is_mana = False
+
+        if self.player.current_hp <= 0:
+            print("Игрок повержен! Показываем экран смерти.")
+
+            # Создаем и показываем экран смерти
+            death_screen = DeathScreenView(self.element, self.level)
+            # Восстанавливаем размер окна
+            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+            self.window.show_view(death_screen)
+            return
+
+        if self.end_turn_button and self.end_turn_button.on_release():
+            print("Кнопка 'Конец хода' нажата!")
+            self.end_player_turn()
+
+    def attack_current_slime(self, damage):
+        """Атака текущего слизня с визуальным эффектом"""
+        if not self.current_slime or not self.current_slime.is_alive:
+            print("Нет живого слизня для атаки!")
+            return
+
+        # Наносим урон
+        print(f"Атакуем {self.current_slime.name} на {damage} урона!")
+
+        # Добавляем частицу урона
+        damage_pos = self.current_slime.get_damage_position()
+        self.damage_emitter.add_damage(
+            damage_pos[0],
+            damage_pos[1],
+            damage
+        )
+
+        survived = self.current_slime.take_damage(damage)
+
+        if not survived:
+            print(f"{self.current_slime.name} повержен!")
+            self.mobs.remove(self.current_slime)
+            self.current_slime = None
+        else:
+            print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")
+
+    def attack_mob(self, damage, mob):
+        if not mob or not mob.is_alive:
+            return
+
+        # Добавляем частицу урона
+        damage_pos = mob.get_damage_position()
+        self.damage_emitter.add_damage(
+            damage_pos[0],
+            damage_pos[1],
+            damage
+        )
+
+        survived = mob.take_damage(damage)
+
+        if not survived:
+            print(f"{mob} повержен!")
+            self.deaded.append(mob)
+            if self.current_slime in self.deaded:
+                self.current_slime = None
+        else:
+            print(f"{mob.name} осталось {mob.current_hp} HP")
+
+    def end_player_turn(self):
+        if not self.is_player_turn:
+            return
+        print(f"\n=== Завершение хода {self.turn_number} ===")
+        # Восстанавливаем всю ману
+        self.player.current_mana = self.player.max_mana
+        for card in self.arm:
+            self.deck.append(card)
+        self.arm = []
+        self.cards = []
+        self.is_player_turn = False
+        self.enemy_turn()
+
+    def new_turn(self):
+        print(len(self.coloda), len(self.deck))
+        self.turn_number += 1
+        self.cards = []
+        self.create_cards_on_table()
+
+    def enemy_turn(self):
+        """Ход врагов с визуальным эффектом"""
+        enemies = [mob for mob in self.mobs if mob.is_alive]
+        if enemies:
+            for enemy in enemies:
+                enemy.start_animation()
+        else:
+            # Создаем и показываем экран смерти
+            win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
+            # Восстанавливаем размер окна
+            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+            self.window.show_view(win_screen)
+            return
+
+    def continue_enemy_turn(self):
+        enemies = [mob for mob in self.mobs if mob.is_alive]
+        for enemy in enemies:
+            damage = enemy.attack()
+            print(f"{enemy.name} атакует игрока на {damage} урона!")
+            # Добавляем частицу урона игроку
+            damage_pos = self.player.get_damage_position()
+            self.damage_emitter.add_damage(
+                damage_pos[0],
+                damage_pos[1],
+                damage,
+                False
+            )
+            if self.defence:
+                self.defence[0][1] -= damage
+                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+                if self.defence[0][1] <= 0:
+                    self.defence.remove(self.defence[0])
+                if self.defence:
+                    self.defence_amount = sum([i[1] for i in self.defence])
+                else:
+                    self.defence_amount = 0
+            else:
+                self.player.take_damage(damage)
+            if self.player.current_hp <= 0:
+                print("Игрок повержен! Показываем экран смерти.")
+
+                # Создаем и показываем экран смерти
+                death_screen = DeathScreenView(self.element, self.level)
+                # Восстанавливаем размер окна
+                self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+                self.window.show_view(death_screen)
+                return
+
+        if all(enemy.end_animation is False for enemy in self.mobs if enemy.is_alive):
+            self.is_player_turn = True
+            self.defence = []
+            self.defence_amount = 0
+            self.new_turn()
