@@ -19,12 +19,256 @@ MONEY = 0
 DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
-CARDS_LIST = cards_list()
 CURRENT_COLODA = CurrentColoda()
-if len(CARDS_LIST) < 15:
+CARDS_LIST = []
+if len(CURRENT_COLODA) < 11:
     start_coloda()
-    init_current_coloda()
     CURRENT_COLODA = CurrentColoda()
+print(CURRENT_COLODA)
+
+
+class PauseScreenView(arcade.View):
+    """Окно паузы с возможностью продолжения игры"""
+
+    def __init__(self, game_view, background_texture=None):
+        super().__init__()
+        self.game_view = game_view  # Сохраняем ссылку на игровое окно
+
+        # Получаем центр экрана
+        center_x = self.window.width // 2
+        center_y = self.window.height // 2
+
+        # Кнопки - выровнены по центру и расположены вертикально
+        self.continue_button = Button(
+            x=center_x,
+            y=center_y + 60,
+            width=280,
+            height=60,
+            text="Продолжить",
+            color=arcade.color.DARK_GREEN,
+            hover_color=arcade.color.GREEN
+        )
+
+        self.restart_button = Button(
+            x=center_x,
+            y=center_y - 20,
+            width=280,
+            height=60,
+            text="Начать заново",
+            color=arcade.color.DARK_BLUE,
+            hover_color=arcade.color.LIGHT_BLUE
+        )
+
+        self.menu_button = Button(
+            x=center_x,
+            y=center_y - 100,
+            width=280,
+            height=60,
+            text="В главное меню",
+            color=arcade.color.DARK_PINK,
+            hover_color=arcade.color.PINK
+        )
+
+        self.quit_button = Button(
+            x=center_x,
+            y=center_y - 180,
+            width=280,
+            height=60,
+            text="Выйти из игры",
+            color=arcade.color.DARK_RED,
+            hover_color=arcade.color.RED
+        )
+
+        # Анимационные переменные
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def on_show(self):
+        """Вызывается при показе экрана паузы"""
+        # Сбрасываем анимацию
+        self.fade_alpha = 0
+        self.text_alpha = 0
+        self.buttons_alpha = 0
+        self.animation_timer = 0
+
+    def on_draw(self):
+        """Отрисовка экрана паузы"""
+        self.clear()
+
+        # Сначала рисуем игровое окно как фон
+        if self.game_view:
+            self.game_view.on_draw()
+
+        # Затемняющий слой
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(
+                self.window.width // 2,
+                self.window.height // 2,
+                self.window.width,
+                self.window.height
+            ),
+            (0, 0, 0, int(self.fade_alpha * 150))  # Меньшая прозрачность, чем в экране смерти
+        )
+
+        # Большой заголовок ПАУЗА
+        arcade.draw_text(
+            "ПАУЗА",
+            self.window.width // 2,
+            self.window.height * 0.75,
+            (255, 255, 0, int(self.text_alpha * 255)),  # Желтый цвет для паузы
+            64,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Подсказка для продолжения
+        arcade.draw_text(
+            "Игра приостановлена",
+            self.window.width // 2,
+            self.window.height * 0.65,
+            (255, 255, 255, int(self.text_alpha * 200)),
+            24,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Рисуем кнопки с учетом прозрачности
+        if self.buttons_alpha > 0:
+            # Полупрозрачные фоны для кнопок
+            for button in [self.continue_button, self.restart_button, self.menu_button, self.quit_button]:
+                button_rect = arcade.LRBT(
+                    button.x - button.width // 2,
+                    button.x + button.width // 2,
+                    button.y - button.height // 2,
+                    button.y + button.height // 2
+                )
+
+                # Фон кнопки с прозрачностью
+                current_color = button.hover_color if button.is_hovered else button.color
+                r, g, b = current_color[:3]
+                arcade.draw_lrbt_rectangle_filled(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    (r, g, b, int(self.buttons_alpha * 255))
+                )
+
+                # Рамка кнопки
+                border_color = arcade.color.BLACK
+                if button.is_pressed:
+                    border_color = arcade.color.RED
+                arcade.draw_lrbt_rectangle_outline(
+                    button_rect.left,
+                    button_rect.right,
+                    button_rect.bottom,
+                    button_rect.top,
+                    border_color,
+                    2
+                )
+
+                # Текст кнопки с прозрачностью
+                button.text_obj.color = (
+                    button.text_obj.color[0],
+                    button.text_obj.color[1],
+                    button.text_obj.color[2],
+                    int(self.buttons_alpha * 255)
+                )
+                button.text_obj.draw()
+
+    def on_update(self, delta_time):
+        """Обновление анимации"""
+        self.animation_timer += delta_time
+
+        # Анимация затемнения
+        if self.animation_timer > 0.1:
+            self.fade_alpha = min(1.0, self.fade_alpha + delta_time * 4)
+
+        # Анимация текста
+        if self.animation_timer > 0.2:
+            self.text_alpha = min(1.0, self.text_alpha + delta_time * 3)
+
+        # Анимация кнопок
+        if self.animation_timer > 0.3:
+            self.buttons_alpha = min(1.0, self.buttons_alpha + delta_time * 4)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        if self.buttons_alpha > 0:
+            self.continue_button.check_hover(x, y)
+            self.restart_button.check_hover(x, y)
+            self.menu_button.check_hover(x, y)
+            self.quit_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            self.continue_button.check_hover(x, y) and self.continue_button.on_press()
+            self.restart_button.check_hover(x, y) and self.restart_button.on_press()
+            self.menu_button.check_hover(x, y) and self.menu_button.on_press()
+            self.quit_button.check_hover(x, y) and self.quit_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
+            if self.continue_button.is_pressed and self.continue_button.check_hover(x, y):
+                self.continue_button.on_release()
+                self.continue_game()
+
+            if self.restart_button.is_pressed and self.restart_button.check_hover(x, y):
+                self.restart_button.on_release()
+                self.restart_game()
+
+            if self.menu_button.is_pressed and self.menu_button.check_hover(x, y):
+                self.menu_button.on_release()
+                self.return_to_menu()
+
+            if self.quit_button.is_pressed and self.quit_button.check_hover(x, y):
+                self.quit_button.on_release()
+                self.quit_game()
+
+    def on_key_press(self, key, modifiers):
+        """Обработка нажатия клавиш"""
+        # ESC для продолжения игры
+        if key == arcade.key.ESCAPE:
+            self.continue_game()
+
+        # P также для продолжения (альтернативная клавиша)
+        elif key == arcade.key.P:
+            self.continue_game()
+
+    def continue_game(self):
+        """Продолжить игру"""
+        print("Продолжение игры...")
+        self.window.show_view(self.game_view)
+
+    def restart_game(self):
+        """Перезапуск игры"""
+        print("Перезапуск игры...")
+        # Создаем новую игру с теми же параметрами
+        x, y = self.game_view.player_sprite.center_x, self.game_view.player_sprite.center_y
+        element = self.game_view.element
+        level = self.game_view.level
+        game_view = GameView(x, y, element, level)
+        self.window.show_view(game_view)
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        print("Возврат в главное меню...")
+        try:
+            background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
+
+    def quit_game(self):
+        """Выход из игры"""
+        print("Выход из игры...")
+        arcade.close_window()
 
 class DeathScreenView(arcade.View):
     """Окно смерти с случайными фразами"""
@@ -961,7 +1205,7 @@ class DeckBuilderView(arcade.View):
         self.all_cards = []  # Все карты по стихиям
         self.selected_cards = []  # Список выбранных карт (id)
         self.current_page = 0  # Текущая страница (стихия)
-        self.total_pages = 7  # 7 стихий
+        self.total_pages = 5  # 5 стихий
         self.card_buttons = []  # Кнопки карт на текущей странице
         self.setup()
 
@@ -1043,7 +1287,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_cards_by_element, get_element_name
 
             self.all_cards = []
-            for i in range(7):  # 7 стихий
+            for i in range(5):  # 5 стихий
                 element_name = get_element_name(i)
                 element_cards = get_cards_by_element(element_name)
                 self.all_cards.append(element_cards)
@@ -1120,7 +1364,7 @@ class DeckBuilderView(arcade.View):
             from cards_test_1 import get_element_display_name
             return get_element_display_name(self.current_page)
         except:
-            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ', 'СВЕТ', "ТЬМА"]
+            element_names = ['ОГОНЬ', 'ВОДА', 'КАМЕНЬ', 'ВЕТЕР', 'МОЛНИЯ']
             return element_names[self.current_page] if self.current_page < len(element_names) else 'НЕИЗВЕСТНО'
 
     def update_confirm_button(self):
@@ -1142,13 +1386,14 @@ class DeckBuilderView(arcade.View):
             self.confirm_button.hover_color = arcade.color.GRAY
 
     def toggle_card_selection(self, card_id):
+        """Добавить/удалить карту из выбранных"""
         if card_id in self.selected_cards:
             self.selected_cards.remove(card_id)
             self.selected_card_details = None
         else:
-            if len(self.selected_cards) < 15:
-                if self.card_buttons[card_id - 10 *((card_id - 1) // 10) - 1].is_opened:
-                    self.selected_cards.append(card_id)
+            # Проверяем, не превышен ли лимит
+            if len(self.selected_cards) < 15:  # Увеличили лимит до 15
+                self.selected_cards.append(card_id)
 
         # Обновляем состояние кнопок
         for card_button in self.card_buttons:
@@ -1157,7 +1402,6 @@ class DeckBuilderView(arcade.View):
         self.update_confirm_button()
 
     def confirm_deck(self):
-        global CURRENT_COLODA
         """Подтвердить выбранную колоду"""
         if len(self.selected_cards) != 15:
             return False
@@ -1165,7 +1409,6 @@ class DeckBuilderView(arcade.View):
         try:
             from cards_test_1 import update_current_coloda
             update_current_coloda(self.selected_cards)
-            CURRENT_COLODA = CurrentColoda()
             return True
         except Exception as e:
             print(f"Ошибка обновления колоды: {e}")
@@ -1430,36 +1673,20 @@ class CardButton:
         self.card_data = card_data
         self.is_selected = is_selected
         self.is_hovered = False
-        if card_data['id'] in [i['id'] for i in CARDS_LIST]:
-            self.is_opened = True
-        else:
-            self.is_opened = False
 
+        # Определяем цвет в зависимости от стихии (ID 1-10: огонь, 11-20: вода и т.д.)
         element_colors = {
-            0: arcade.color.LIGHT_SALMON,
-            1: arcade.color.BLUE,
-            2: arcade.color.LIGHT_GREEN,
-            3: arcade.color.LIGHT_GRAY,
-            4: arcade.color.ELECTRIC_PURPLE,
-            5: (230, 226, 122),
-            6: (92, 58, 126)
-        }
-
-        block_colors = {
-            0: (145, 115, 115),
-            1: (115, 124, 145),
-            2: (105, 140, 106),
-            3: (112, 112, 112),
-            4: (131, 112, 137),
-            5: (173, 169, 138),
-            6: (99, 86, 113)
+            0: arcade.color.LIGHT_SALMON,  # Огонь (ID 1-10)
+            1: arcade.color.BLUE,  # Вода (ID 11-20)
+            2: arcade.color.LIGHT_GREEN,  # Камень (ID 21-30)
+            3: arcade.color.LIGHT_GRAY,  # Ветер (ID 31-40)
+            4: arcade.color.ELECTRIC_PURPLE  # Молния (ID 41-50)
         }
 
         element_index = (card_data['id'] - 1) // 10
         self.color = element_colors.get(element_index, arcade.color.DARK_BLUE_GRAY)
         self.hover_color = arcade.color.WHITE
         self.selected_color = arcade.color.GOLD
-        self.blocked_color = block_colors.get(element_index, arcade.color.GRAY)
 
         self.name_text = []
         for p, t in enumerate(card_data['name'].split('/')):
@@ -1497,9 +1724,7 @@ class CardButton:
     def draw(self):
         """Отрисовывает кнопку карты"""
         # Основной цвет
-        if not self.is_opened:
-            current_color = self.blocked_color
-        elif self.is_selected:
+        if self.is_selected:
             current_color = self.selected_color
         elif self.is_hovered:
             current_color = self.hover_color
@@ -2386,7 +2611,8 @@ class GameView(arcade.View):
         elif key == arcade.key.DOWN or key == arcade.key.S:
             self.down_pressed = True
         elif key == arcade.key.ESCAPE:
-            self.back_to_menu()
+            # ESC вызывает паузу в игре (добавленная строка)
+            self.show_pause_screen()
         elif key == arcade.key.PLUS or key == arcade.key.EQUAL:
             self.player_sprite.speed = min(self.player_sprite.speed + 1, 15)
         elif key == arcade.key.MINUS:
@@ -2450,6 +2676,11 @@ class GameView(arcade.View):
             menu_view = MenuView()
             LIST_POSESH = []
         self.window.show_view(menu_view)
+
+    def show_pause_screen(self):
+        """Показывает экран паузы"""
+        pause_view = PauseScreenView(self)
+        self.window.show_view(pause_view)
 
 
 # --- Класс карточной игры ---
@@ -2704,12 +2935,8 @@ class CardGameView(arcade.View):
             self.create_random_slime()
             print("Нажата клавиша P - создан новый случайный слизень!")
         elif key == arcade.key.ESCAPE:
-            # Возвращаемся в основную игру
-            x, y = self.coords
-            game_view = GameView(x, y, self.element, self.level)
-            # Восстанавливаем размер окна
-            self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-            self.window.show_view(game_view)
+            # ESC вызывает паузу в карточной игре (измененная строка)
+            self.show_pause_screen()
 
     def on_mouse_motion(self, x, y, dx, dy):
         """Обработка движения мыши"""
@@ -3008,6 +3235,13 @@ class CardGameView(arcade.View):
             self.defence = []
             self.defence_amount = 0
             self.new_turn()
+
+    def show_pause_screen(self):
+        """Показывает экран паузы"""
+        pause_view = PauseScreenView(self)
+        self.window.show_view(pause_view)
+
+
 
 
 # --- Класс меню ---
