@@ -5,8 +5,8 @@ class CardGameView(arcade.View):
         self.element = element
         self.level = level
         self.room = room
-        self.SCREEN_WIDTH = 800
-        self.SCREEN_HEIGHT = 600
+        self.SCREEN_WIDTH = int(800 * 1.28)  # 1024
+        self.SCREEN_HEIGHT = int(600 * 1.28)  # 768
         self.TITLE = "Карточная игра"
 
         self.cards = []
@@ -46,7 +46,7 @@ class CardGameView(arcade.View):
         except:
             print("Не удалось загрузить фоновые текстуры")
 
-        self.end_turn_button = EndTurnButton(700, 550)
+        self.end_turn_button = EndTurnButton(int(700 * 1.28), int(550 * 1.28))  # 896, 704
 
         # Создаем 5 карт на игровом столе
         self.create_coloda()
@@ -58,7 +58,11 @@ class CardGameView(arcade.View):
         self.mobs.clear()
 
         # Создаем слизня в центре правой части экрана
-        enemies_pos = [(550, 400), (675, 325), (550, 250)]
+        enemies_pos = [
+            (int(550 * 1.28), int(400 * 1.28)),  # 704, 512
+            (int(675 * 1.28), int(325 * 1.28)),  # 864, 416
+            (int(550 * 1.28), int(250 * 1.28))   # 704, 320
+        ]
         enemies_types = ["small", "large", "medium"]
 
         # Создаем слизня
@@ -77,16 +81,16 @@ class CardGameView(arcade.View):
     def create_cards_on_table(self):
         """Создает 5 карт на игровом столе"""
         # Параметры стола
-        table_height = 150  # Высота стола
+        table_height = int(150 * 1.28)  # 192
 
         # Параметры карт (увеличенные размеры)
-        card_width = 130  # Увеличенная ширина
-        card_height = 220  # Увеличенная высота
-        card_spacing = 5  # Увеличенное расстояние между картами
+        card_width = int(130 * 1.28)  # 166
+        card_height = int(220 * 1.28)  # 282
+        card_spacing = int(5 * 1.28)  # 6
 
         # Позиционируем карты внизу экрана
-        bottom_margin = 20  # Отступ от нижнего края
-        cards_y = bottom_margin + table_height / 2 - 80  # Позиция карт
+        bottom_margin = int(20 * 1.28)  # 26
+        cards_y = bottom_margin + table_height / 2 - int(80 * 1.28)  # Позиция карт
 
         # Вычисляем начальную позицию для первой карты
         total_cards_width = 5 * card_width + 4 * card_spacing
@@ -107,9 +111,7 @@ class CardGameView(arcade.View):
             arcade.color.BLUE,
             arcade.color.LIGHT_GREEN,
             arcade.color.LIGHT_GRAY,
-            arcade.color.LIGHT_PINK,
-            (230, 226, 122),
-            (92, 58, 126)
+            arcade.color.LIGHT_PINK
         ]
 
         for i in range(5):
@@ -131,8 +133,8 @@ class CardGameView(arcade.View):
                 hover_color=colors[color],
                 text_color=arcade.color.BLACK,
                 description_color=arcade.color.DARK_BROWN,
-                font_size=12,
-                description_font_size=9,
+                font_size=int(12 * 1.28),  # 15
+                description_font_size=int(9 * 1.28),  # 12
                 dict=self.arm[i]
             )
 
@@ -163,13 +165,13 @@ class CardGameView(arcade.View):
 
         # Рисуем игровой стол
         table_width = self.width * 0.9
-        table_height = 150
+        table_height = int(150 * 1.28)  # 192
         table_x = self.width // 2
         table_y = table_height // 2
 
         table_rect = arcade.rect.XYWH(table_x, table_y, table_width, table_height)
         arcade.draw_rect_filled(table_rect, arcade.color.DARK_BROWN)
-        arcade.draw_rect_outline(table_rect, arcade.color.BLACK, border_width=3)
+        arcade.draw_rect_outline(table_rect, arcade.color.BLACK, border_width=int(3 * 1.28))  # 4
 
         # Рисуем игрока
         if self.player:
@@ -192,10 +194,10 @@ class CardGameView(arcade.View):
 
         arcade.draw_text(
             f"ХОД: {self.turn_number}",
-            700,
-            500,
+            int(700 * 1.28),  # 896
+            int(500 * 1.28),  # 640
             arcade.color.GOLD,
-            16,
+            int(16 * 1.28),  # 20
             anchor_x="center",
             anchor_y="center",
             bold=True
@@ -203,20 +205,20 @@ class CardGameView(arcade.View):
 
         arcade.draw_text(
             f"Колода: {len(self.coloda)} | Сброс: {len(self.deck)}",
-            400,
-            560,
+            int(400 * 1.28),  # 512
+            int(560 * 1.28),  # 717
             arcade.color.LIGHT_GRAY,
-            12,
+            int(12 * 1.28),  # 15
             anchor_x="center",
             anchor_y="center"
         )
 
         arcade.draw_text(
             f"Защита: {self.defence_amount}",
-            400,
-            530,
+            int(400 * 1.28),  # 512
+            int(530 * 1.28),  # 678
             arcade.color.LIGHT_GRAY,
-            12,
+            int(12 * 1.28),  # 15
             anchor_x="center",
             anchor_y="center"
         )
