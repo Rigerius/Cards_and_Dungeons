@@ -591,11 +591,11 @@ class WinScreenView(arcade.View):
             self.reward = random.randrange(40, 71)
         if self.room == '_':
             self.reward = int(self.reward * (random.randrange(15, 25) * 0.1))
-            if ((random.randrange(1, 101) <= 100 and self.level in ['первый', 'второй'])
-                or (random.randrange(1, 101) <= 200 and self.level == 'третий')):
-                CARDS_LIST = cards_list()
+            if ((random.randrange(1, 101) <= 10 and self.level in ['первый', 'второй'])
+                or (random.randrange(1, 101) <= 20 and self.level == 'третий')):
                 self.new_card = get_new_card()
                 self.new_card = " ".join(self.new_card['name'].split('/'))
+                CARDS_LIST = cards_list()
         MONEY += self.reward
 
 
@@ -777,7 +777,12 @@ class WinScreenView(arcade.View):
         if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
             if self.shop_button.is_pressed and self.shop_button.check_hover(x, y):
                 self.shop_button.on_release()
-                self.go_to_shop()
+                if not (self.level == 'третий' and self.room == '_'):
+                    self.go_to_shop()
+                else:
+                    background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
+                    menu_view = MenuView(background_texture)
+                    self.window.show_view(menu_view)
 
     def go_to_shop(self):
         """Переход в магазин для выбора карт"""
