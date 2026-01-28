@@ -2792,6 +2792,12 @@ class CardGameView(arcade.View):
         mobs_pos = [i.split(', ') for i in mobs.split('\n')[1].split('/')]
         enemies_pos = [(int(int(i[0]) * 1.28), int(int(i[1]) * 1.28)) for i in mobs_pos]
         enemies_types = mobs.split('\n')[2].split(', ')
+        if self.room == '_':
+            mobs = a.split('|')[3].split('-')[1:][level]
+            mobs_pos = [i.split(', ') for i in mobs.split('\n')[1].split('/')]
+            enemies_pos = [(int(int(i[0]) * 1.28), int(int(i[1]) * 1.28)) for i in mobs_pos]
+            enemies_types = mobs.split('\n')[2].split(', ')
+
 
         # Создаем слизня
         for i in range(len(enemies_pos)):
