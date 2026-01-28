@@ -1,22 +1,22 @@
 fire
 images/tiles/lava.jpg
-images/tiles/лава.jpg
-images/tiles/лава.jpg
-images/tiles/лава.jpg
-images/tiles/лава.jpg
-images/tiles/лава.jpg
-images/tiles/лава.jpg
-images/tiles/fire_land.jpg
+images/tiles/Огонь/Лава_г.jpg
+images/tiles/огонь/Лава_в.jpg
+images/tiles/Огонь/Лава_1.jpg
+images/tiles/Огонь/Лава_2.jpg
+images/tiles/Огонь/Лава_3.jpg
+images/tiles/Огонь/Лава_4.jpg
+images/tiles/огненная_земля_1.jpg
 images/tiles/magma_2.jpg
 |
 water
 images/tiles/lava.jpg
-images/tiles/Тьма/темная бездна_г.jpg
-images/tiles/вода_3.jpg
-images/tiles/Тьма/темная бездна_1.jpg
-images/tiles/Тьма/темная бездна_2.jpg
-images/tiles/Тьма/темная бездна_3.jpg
-images/tiles/Тьма/темная бездна_4.jpg
+images/tiles/Вода/вода_г.jpg
+images/tiles/Вода/вода_в.jpg
+images/tiles/Вода/вода_1.jpg
+images/tiles/Вода/вода_2.jpg
+images/tiles/Вода/вода_3.jpg
+images/tiles/Вода/вода_4.jpg
 images/tiles/лед_4.jpg
 images/tiles/лед_3.jpg
 |
