@@ -1,7 +1,7 @@
 First
 -
 550, 400/675, 325/550, 250
-small, large, medium
+medium, small, medium
 -
 550, 400/675, 325/550, 250
 small, large, small
@@ -10,18 +10,55 @@ small, large, small
 medium, medium, medium
 -
 520, 400/620, 375/620, 225/520, 200
-small, medium, medium, small
+small, small, small, small
+-
+550, 400/550, 250
+large, large
 |
 Second
 -
 550, 400/675, 325/550, 250
+small, large, medium
+-
+550, 400/675, 325/550, 250
 medium, large, medium
 -
-550, 400/550, 250
-large, large
+520, 400/620, 375/620, 225/520, 200
+small, medium, medium, small
+-
+520, 400/620, 375/620, 225/520, 200/450, 300
+small, small, small, small, small
+-
+480, 320/620, 380/620, 290/620, 200
+large, small, small, small
+|
+Third
+-
+550, 400/675, 325/550, 250
+large, medium, large
+-
+550, 400/675, 325/550, 250
+large, large, large
 -
 520, 400/620, 385/620, 225/520, 210
 medium, medium, medium, medium
 -
+560, 400/650, 375/650, 225/560, 200/450, 300
+small, small, small, small, large
+-
 520, 400/620, 375/620, 225/520, 200/450, 300
-small, medium, medium, small, medium
+small, medium, medium, small, small
+-
+480, 300/620, 375/620, 300/620, 225
+large, medium, small, medium
+|
+BOSS
+-
+620, 300/600, 400/600, 200/520, 250/520, 350
+large, small, small, small, small
+-
+650, 300/600, 400/600, 200/4500, 230/450, 370
+large, small, small, medium, medium
+-
+650, 300/600, 400/600, 200/520, 230/520, 370/380, 300
+large, small, small, medium, medium, large
