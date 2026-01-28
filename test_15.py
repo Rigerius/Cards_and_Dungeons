@@ -254,8 +254,10 @@ class PauseScreenView(arcade.View):
         pass
 
     def return_to_menu(self):
+        global LIST_POSESH
         """Возврат в главное меню"""
         print("Возврат в главное меню...")
+        LIST_POSESH = []
         try:
             background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
             menu_view = MenuView(background_texture)
@@ -773,6 +775,7 @@ class WinScreenView(arcade.View):
                 self.shop_button.on_press()
 
     def on_mouse_release(self, x, y, button, modifiers):
+        global LIST_POSESH
         """Обработка отпускания мыши"""
         if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
             if self.shop_button.is_pressed and self.shop_button.check_hover(x, y):
@@ -780,6 +783,7 @@ class WinScreenView(arcade.View):
                 if not (self.level == 'третий' and self.room == '_'):
                     self.go_to_shop()
                 else:
+                    LIST_POSESH = []
                     background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
                     menu_view = MenuView(background_texture)
                     self.window.show_view(menu_view)
@@ -2780,17 +2784,17 @@ class CardGameView(arcade.View):
         """Создание случайного слизня"""
         # Очищаем список мобов
         self.mobs.clear()
-
-        # Создаем слизня в центре правой части экрана
-        enemies_pos = [
-            (int(550 * 1.28), int(400 * 1.28)),  # 704, 512
-            (int(675 * 1.28), int(325 * 1.28)),  # 864, 416
-            (int(550 * 1.28), int(250 * 1.28))   # 704, 320
-        ]
-        enemies_types = ["small", "large", "medium"]
+        level = ['первый', "второй", "третий"].index(self.level)
+        with open('enemies.txt', 'r', encoding='utf-8') as f:
+            a = f.read()
+        mobs_list = a.split('|')[level].split('-')[1:]
+        mobs = random.choice(mobs_list)
+        mobs_pos = [i.split(', ') for i in mobs.split('\n')[1].split('/')]
+        enemies_pos = [(int(int(i[0]) * 1.28), int(int(i[1]) * 1.28)) for i in mobs_pos]
+        enemies_types = mobs.split('\n')[2].split(', ')
 
         # Создаем слизня
-        for i in range(3):
+        for i in range(len(enemies_pos)):
             new_slime = Slime(enemies_types[i], enemies_pos[i][0], enemies_pos[i][1])
             self.mobs.append(new_slime)
 
