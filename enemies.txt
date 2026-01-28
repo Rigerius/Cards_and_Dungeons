@@ -1,0 +1,27 @@
+First
+-
+550, 400/675, 325/550, 250
+small, large, medium
+-
+550, 400/675, 325/550, 250
+small, large, small
+-
+550, 400/675, 325/550, 250
+medium, medium, medium
+-
+520, 400/620, 375/620, 225/520, 200
+small, medium, medium, small
+|
+Second
+-
+550, 400/675, 325/550, 250
+medium, large, medium
+-
+550, 400/550, 250
+large, large
+-
+520, 400/620, 385/620, 225/520, 210
+medium, medium, medium, medium
+-
+520, 400/620, 375/620, 225/520, 200/450, 300
+small, medium, medium, small, medium
