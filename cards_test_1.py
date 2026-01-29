@@ -237,3 +237,18 @@ def get_new_card():
     cur.execute('''INSERT INTO CardsList (id, name) VALUES (?, ?)''', (card['id'], card['name']))
     con.commit()
     return card
+
+
+def save_result(time, win):
+    con = sqlite3.connect('database/database.db')
+    cur = con.cursor()
+    cur.execute('''INSERT INTO History (time, result) VALUES (?, ?)''', (time, win))
+    con.commit()
+
+
+def history_info():
+    con = sqlite3.connect('database/database.db')
+    cur = con.cursor()
+    all_battles = len(cur.execute('''SELECT id FROM History''').fetchall())
+    top = cur.execute('''SELECT * FROM History WHERE result = ?''', (1, )).fetchall()
+    return all_battles, top
