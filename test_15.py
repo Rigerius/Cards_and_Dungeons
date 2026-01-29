@@ -338,15 +338,43 @@ class PauseScreenView(arcade.View):
         self.window.show_view(self.game_view)
 
     def restart_game(self):
+        global DUNGEON_MAP, dun
         """Перезапуск игры"""
-        """print("Перезапуск игры...")
-        # Создаем новую игру с теми же параметрами
-        x, y = self.game_view.player.x, self.game_view.player_sprite.center_y
-        element = self.game_view.element
-        level = self.game_view.level
+        stopwatch.reset()
+        dung = random_dun()
+        element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
+        level = 'первый'
+        dun = dung['dungeon']
+        DUNGEON_MAP = {
+            "name": dung['name'],
+            "world_width": TILE_SIZE * 250,  # 16000
+            "world_height": TILE_SIZE * 250,  # 16000
+            "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
+            "squares": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '*'],
+            "gorizontal": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '#'],
+            "vertical": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '$'],
+            "walls_1": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '1'],
+            "walls_2": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '2'],
+            "walls_3": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '3'],
+            "walls_4": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '4']
+        }
+        x, y = DUNGEON_MAP['player_start']
         game_view = GameView(x, y, element, level)
-        self.window.show_view(game_view)"""
-        pass
+        self.window.show_view(game_view)
 
     def return_to_menu(self):
         global LIST_POSESH
@@ -379,6 +407,7 @@ class DeathScreenView(arcade.View):
         self.select_random_phrase()
         self.element = element
         self.level = level
+        self.result = None
 
         LIST_POSESH = []
 
@@ -508,6 +537,16 @@ class DeathScreenView(arcade.View):
             bold=True
         )
 
+        if stopwatch.is_running:
+            self.result = stopwatch.get_formatted_time()
+        stopwatch.stop()
+        arcade.draw_text(
+            f"Время: {self.result}",
+            self.window.width // 2, self.window.height * 0.45,
+            (255, 255, 255, int(self.text_alpha * 255)), 36,
+            anchor_x="center",
+            anchor_y="center")
+
         # Выбранная фраза
         if self.current_phrase:
             # Разбиваем длинную фразу на строки
@@ -527,7 +566,7 @@ class DeathScreenView(arcade.View):
 
             # Рисуем каждую строку
             line_height = 40
-            start_y = self.window.height * 0.55
+            start_y = self.window.height * 0.6
 
             for i, line in enumerate(lines):
                 arcade.draw_text(
@@ -589,7 +628,7 @@ class DeathScreenView(arcade.View):
             arcade.draw_text(
                 "Выберите дальнейшее действие",
                 self.window.width // 2,
-                self.window.height * 0.4,
+                self.window.height * 0.36,
                 (200, 200, 200, int(self.buttons_alpha * 200)),
                 20,
                 anchor_x="center",
@@ -648,9 +687,40 @@ class DeathScreenView(arcade.View):
                 self.quit_game()
 
     def restart_game(self):
+        global DUNGEON_MAP, dun
         """Перезапуск игры"""
-        print("Перезапуск игры...")
-        # Создаем новую игру
+        stopwatch.reset()
+        dung = random_dun()
+        self.element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
+        self.level = 'первый'
+        dun = dung['dungeon']
+        DUNGEON_MAP = {
+            "name": dung['name'],
+            "world_width": TILE_SIZE * 250,  # 16000
+            "world_height": TILE_SIZE * 250,  # 16000
+            "player_start": [TILE_SIZE * dung['start'][0], TILE_SIZE * dung['start'][1]],  # Центр
+            "squares": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '*'],
+            "gorizontal": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '#'],
+            "vertical": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '$'],
+            "walls_1": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '1'],
+            "walls_2": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '2'],
+            "walls_3": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '3'],
+            "walls_4": [
+                [x * TILE_SIZE, (len(dun) - y - 1) * TILE_SIZE] for y in range(len(dun)) for x
+                in range(len(dun[y])) if dun[y][x] == '4']
+        }
         x, y = DUNGEON_MAP['player_start']
         game_view = GameView(x, y, self.element, self.level)
         self.window.show_view(game_view)
