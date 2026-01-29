@@ -22,6 +22,7 @@ CURRENT_COLODA = CurrentColoda()
 if len(CARDS_LIST) < 15:
     start_coloda()
     init_current_coloda()
+    CARDS_LIST = cards_list()
     CURRENT_COLODA = CurrentColoda()
 
 class Stopwatch:
@@ -51,14 +52,15 @@ class Stopwatch:
             self.pause_time = time.time()
             self.is_running = False
             self.is_paused = True
+        elif not self.is_running and self.is_paused:
+            self.pause_time = time.time()
+            self.is_running = True
+            self.is_paused = False
 
     def stop(self):
-        """Полностью остановить и сбросить"""
+        """Полностью остановить"""
         self.is_running = False
         self.is_paused = False
-        self.start_time = 0
-        self.pause_time = 0
-        self.total_paused_time = 0
 
     def reset(self):
         """Сбросить время, но оставить текущее состояние (запущен/на паузе)"""
@@ -332,6 +334,7 @@ class PauseScreenView(arcade.View):
     def continue_game(self):
         """Продолжить игру"""
         print("Продолжение игры...")
+        stopwatch.pause()
         self.window.show_view(self.game_view)
 
     def restart_game(self):
@@ -626,7 +629,6 @@ class DeathScreenView(arcade.View):
             if self.menu_button.check_hover(x, y):
                 stopwatch.toggle()
                 stopwatch.reset()
-                self.menu_button.on_press()
             if self.quit_button.check_hover(x, y):
                 self.quit_button.on_press()
 
@@ -681,6 +683,7 @@ class WinScreenView(arcade.View):
         self.coords = (x, y)
         self.room = room
         self.new_card = None
+        self.result = None
         if self.level == 'первый':
             self.reward = random.randrange(14, 31)
         elif self.level == "второй":
@@ -757,25 +760,88 @@ class WinScreenView(arcade.View):
             anchor_y="center",
             bold=True)
 
-        arcade.draw_text(
-            'Ты одержал победу в бою!',
-            self.window.width // 2,
-            400,
-            (255, 255, 255, int(self.text_alpha * 255)),
-            28,
-            anchor_x="center",
-            anchor_y="center",
-            bold=True)
+        if not (self.level == 'третий' and self.room == '_'):
+            arcade.draw_text(
+                'Ты одержал победу в бою!',
+                self.window.width // 2,
+                400,
+                (255, 255, 255, int(self.text_alpha * 255)),
+                28,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True)
 
-        arcade.draw_text(
-            f'Награда: {self.reward} золота!',
-            self.window.width // 2,
-            350,
-            (255, 215, 0, int(self.text_alpha * 255)),  # Золотой цвет
-            24,
-            anchor_x="center",
-            anchor_y="center",
-            bold=True)
+            arcade.draw_text(
+                f'Награда: {self.reward} золота!',
+                self.window.width // 2,
+                350,
+                (255, 215, 0, int(self.text_alpha * 255)),  # Золотой цвет
+                24,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True)
+
+            arcade.draw_text(
+                "После боя вы будете перенаправлены в магазин",
+                self.window.width // 2,
+                self.window.height * 0.4,
+                (200, 200, 200, int(self.buttons_alpha * 200)),
+                20,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+            if self.new_card is not None:
+                arcade.draw_text(
+                    f"Получена новая карта: {self.new_card}!",
+                    self.window.width // 2,
+                    self.window.height * 0.35,
+                    (31, 163, 40, int(self.text_alpha * 255)),
+                    24,
+                    anchor_x="center",
+                    anchor_y="center"
+                )
+        else:
+            arcade.draw_text(
+                'Ты победил последнего босса!',
+                self.window.width // 2,
+                450,
+                (255, 255, 255, int(self.text_alpha * 255)),
+                28,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True)
+
+            arcade.draw_text(
+                "После боя вы будете перенаправлены в меню",
+                self.window.width // 2,
+                self.window.height * 0.4,
+                (200, 200, 200, int(self.buttons_alpha * 200)),
+                20,
+                anchor_x="center",
+                anchor_y="center"
+            )
+
+            if stopwatch.is_running:
+                self.result = stopwatch.get_formatted_time()
+            stopwatch.stop()
+            arcade.draw_text(
+                f"Время: {self.result}",
+                self.window.width // 2, self.window.height * 0.52,
+                (255, 255, 255, int(self.text_alpha * 255)), 36,
+                anchor_x="center",
+                anchor_y="center")
+
+            if self.new_card is not None:
+                arcade.draw_text(
+                    f"Получена новая карта: {self.new_card}!",
+                    self.window.width // 2,
+                    self.window.height * 0.45,
+                    (31, 163, 40, int(self.text_alpha * 255)),
+                    24,
+                    anchor_x="center",
+                    anchor_y="center"
+                )
 
         # Рисуем кнопки с учетом прозрачности
         if self.buttons_alpha > 0:
@@ -821,28 +887,6 @@ class WinScreenView(arcade.View):
                 )
                 button.text_obj.draw()
 
-            # Подсказка
-            arcade.draw_text(
-                "После боя вы будете перенаправлены в магазин",
-                self.window.width // 2,
-                self.window.height * 0.4,
-                (200, 200, 200, int(self.buttons_alpha * 200)),
-                20,
-                anchor_x="center",
-                anchor_y="center"
-            )
-
-            if self.new_card is not None:
-                arcade.draw_text(
-                    f"Получена новая карта: {self.new_card}!",
-                    self.window.width // 2,
-                    self.window.height * 0.35,
-                    (31, 163, 40),
-                    24,
-                    anchor_x="center",
-                    anchor_y="center"
-                )
-
     def on_update(self, delta_time):
         """Обновление анимации"""
         self.animation_timer += delta_time
@@ -883,8 +927,8 @@ class WinScreenView(arcade.View):
                     background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
                     menu_view = MenuView(background_texture)
                     self.window.show_view(menu_view)
-        stopwatch.toggle()
-        stopwatch.reset()
+                    stopwatch.toggle()
+                    stopwatch.reset()
 
     def go_to_shop(self):
         """Переход в магазин для выбора карт"""
@@ -2440,7 +2484,6 @@ class GameView(arcade.View):
                         arcade.color.DARK_GREEN
                     )
 
-
         # Рисуем сетку (только видимую часть)
         self._draw_grid()
 
@@ -2476,8 +2519,6 @@ class GameView(arcade.View):
         # Рисуем HUD (без смещения камеры)
         self._draw_hud()
 
-
-
     def _draw_grid(self):
         """Рисуем клеточную сетку только для видимой область"""
         # Определяем видимую область
@@ -2510,8 +2551,8 @@ class GameView(arcade.View):
 
     def _draw_hud(self):
         """Рисует интерфейс"""
-        screen_width = self.window.width-100
-        screen_height = self.window.height-30
+        screen_width = self.window.width - 100
+        screen_height = self.window.height
 
         # Полупрозрачная панель для текста
         arcade.draw_lrbt_rectangle_filled(
@@ -2521,27 +2562,27 @@ class GameView(arcade.View):
         )
 
         arcade.draw_text(f"{self.level.upper()} УРОВЕНЬ",
-                         screen_width // 2, screen_height - 40,
+                         (screen_width + 100) // 2, screen_height - 40,
                          arcade.color.YELLOW, 24,
                          anchor_x="center", anchor_y="center")
 
         arcade.draw_text(
             f"Время: {self.stopwatch.get_formatted_time()}",
-            10, screen_height - 30,
-            arcade.color.WHITE, 14)
+            10, screen_height - 60,
+            arcade.color.WHITE, 18)
 
         arcade.draw_text(f"element: {self.element}",
-                         100, screen_height - 10, arcade.color.WHITE, 14)
+                        10, screen_height - 30, arcade.color.WHITE, 18)
 
         arcade.draw_text(f"FPS: {self.fps_text}",
-                         screen_width - 100, screen_height - 35,
+                         screen_width + 65, screen_height - 25,
                          arcade.color.LIGHT_GREEN, 14,
                          anchor_x="right")
 
         arcade.draw_text("Управление: WASD/Стрелки",
-                         10, screen_height - 70, arcade.color.LIGHT_GRAY, 12)
+                         10, screen_height - 90, arcade.color.LIGHT_GRAY, 16)
         arcade.draw_text("ESC - пауза",
-                         10, screen_height - 95, arcade.color.LIGHT_GRAY, 12)
+                         10, screen_height - 120, arcade.color.LIGHT_GRAY, 16)
 
     def on_update(self, delta_time):
         global LIST_POSESH
@@ -3388,6 +3429,7 @@ class MenuView(arcade.View):
         global DUNGEON_MAP
         global dun
         super().__init__()
+        stopwatch.reset()
 
         dung = random_dun()
         self.element = random.choice(['fire', 'water', 'stone', 'wind', 'lightning', 'light', 'dark'])
