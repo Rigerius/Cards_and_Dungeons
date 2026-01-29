@@ -551,6 +551,10 @@ class DeathScreenView(arcade.View):
         self.text_alpha = 0
         self.buttons_alpha = 0
         self.animation_timer = 0
+        self.music = arcade.load_sound("music/lose.mp3")
+
+        if self.music:
+            arcade.play_sound(self.music, volume=0.6)
 
     def load_death_phrases(self):
         """Загружает фразы из файла"""
@@ -891,6 +895,28 @@ class WinScreenView(arcade.View):
         self.buttons_alpha = 0
         self.animation_timer = 0
 
+        # Звук победы
+        self.victory_sound = None
+        self.sound_played = False
+        self.load_sounds()
+
+        if not self.sound_played and self.victory_sound:
+            arcade.play_sound(self.victory_sound, volume=0.6)
+            self.sound_played = True
+
+    def load_sounds(self):
+        """Загружает звуки"""
+        try:
+            # Пробуем загрузить кастомный звук победы
+            self.victory_sound = arcade.load_sound("music/win.mp3")
+        except:
+            try:
+                # Используем звук из ресурсов Arcade
+                self.victory_sound = arcade.load_sound(":resources:music/win.mp3", True)
+            except:
+                print("Не удалось загрузить звук победы")
+
+
     def on_show(self):
         """Вызывается при показе экрана победы"""
         arcade.set_background_color(arcade.color.BLACK)
@@ -899,6 +925,10 @@ class WinScreenView(arcade.View):
         self.text_alpha = 0
         self.buttons_alpha = 0
         self.animation_timer = 0
+
+        if not self.sound_played and self.victory_sound:
+            arcade.play_sound(self.victory_sound, volume=0.6)
+            self.sound_played = True
 
     def on_draw(self):
         """Отрисовка экрана победы"""
@@ -2804,12 +2834,12 @@ class GameView(arcade.View):
     def play_random_walk_sound(self):
         """Воспроизводит случайный звук шага"""
         if self.walk_sounds:
-            sound = random.choice(self.walk_sounds)
+            self.sound = random.choice(self.walk_sounds)
             # Случайная громкость для разнообразия
             volume = random.uniform(0.2, 0.4)
             # Случайная скорость воспроизведения
             speed = random.uniform(0.9, 1.1)
-            arcade.play_sound(sound, volume=volume, speed=speed)
+            arcade.play_sound(self.sound, volume=volume, speed=speed)
 
     def on_update(self, delta_time):
         global LIST_POSESH
@@ -3120,11 +3150,34 @@ class CardGameView(arcade.View):
         self.is_player_turn = True
         self.deaded = []
 
+        # Звуки
+        self.victory_sound = None
+        self.defeat_sound = None
+        self.load_sounds()
+
         # Добавляем эмиттер урона
         self.damage_emitter = DamageEmitter()
         self.heal_emitter = DamageEmitter()  # Для исцеления
 
         self.setup()
+
+    def load_sounds(self):
+        """Загружает звуки"""
+        try:
+            self.victory_sound = arcade.load_sound("sounds/victory.wav")
+        except:
+            try:
+                self.victory_sound = arcade.load_sound(":resources:sounds/coin4.wav")
+            except:
+                pass
+
+        try:
+            self.defeat_sound = arcade.load_sound("sounds/death.wav")
+        except:
+            try:
+                self.defeat_sound = arcade.load_sound(":resources:sounds/gameover3.wav")
+            except:
+                pass
 
     def setup(self):
         """Настройка игры"""
