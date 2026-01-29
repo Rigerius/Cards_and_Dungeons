@@ -3511,6 +3511,17 @@ class CardGameView(arcade.View):
                                     a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
                                     damage = random.randrange(a1, a2 + 1)
                                     self.attack_mob(damage, self.current_slime)
+                                    if 'Оглушение' in card.dict['effects'] and self.current_slime:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            self.current_slime.is_stunned = True
+                                            damage_pos = self.current_slime.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '*',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.BLUE
                                     card.is_mana = True
                         else:
                             flag = 1
@@ -3537,6 +3548,17 @@ class CardGameView(arcade.View):
                                     a1, a2 = card.dict['damage'][card.dict['colvo'].index(c)]
                                     damage = random.randrange(a1, a2 + 1)
                                     self.attack_mob(damage, mob)
+                                    if 'Оглушение' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_stunned = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '*',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.BLUE
                                     fake_mobs.remove(mob)
                                 card.is_mana = True
                         else:
@@ -3560,6 +3582,17 @@ class CardGameView(arcade.View):
                                     fake_mobs.remove(self.current_slime)
                                 for mob in fake_mobs:
                                     self.attack_mob(damage, mob)
+                                    if 'Оглушение' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_stunned = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '*',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.BLUE
                                 card.is_mana = True
                         else:
                             flag = 1
@@ -3658,7 +3691,11 @@ class CardGameView(arcade.View):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         if enemies:
             for enemy in enemies:
-                enemy.start_animation()
+                if enemy.is_stunned:
+                    enemy.end_animation = True
+                    enemy.is_stunned = False
+                else:
+                    enemy.start_animation()
         else:
             # Создаем и показываем экран смерти
             win_screen = WinScreenView(self.coords[0], self.coords[1], self.element, self.level, self.room)
