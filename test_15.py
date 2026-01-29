@@ -3,6 +3,7 @@ import random
 import math
 import sys
 import os
+import time
 from dungeons import *
 from test_fight import *
 from emitter_damage import *
@@ -23,6 +24,97 @@ if len(CARDS_LIST) < 15:
     init_current_coloda()
     CURRENT_COLODA = CurrentColoda()
 
+class Stopwatch:
+    def __init__(self):
+        self.start_time = 0  # Время запуска секундомера
+        self.pause_time = 0  # Время на момент паузы
+        self.is_running = False  # Запущен ли секундомер
+        self.is_paused = False  # На паузе ли секундомер
+        self.total_paused_time = 0  # Общее время в паузе
+
+    def start(self):
+        """Запустить секундомер (или продолжить после паузы)"""
+        if not self.is_running and not self.is_paused:
+            # Первый запуск
+            self.start_time = time.time()
+            self.is_running = True
+        elif self.is_paused:
+            # Продолжение после паузы
+            pause_duration = time.time() - self.pause_time
+            self.total_paused_time += pause_duration
+            self.is_paused = False
+            self.is_running = True
+
+    def pause(self):
+        """Поставить на паузу"""
+        if self.is_running and not self.is_paused:
+            self.pause_time = time.time()
+            self.is_running = False
+            self.is_paused = True
+
+    def stop(self):
+        """Полностью остановить и сбросить"""
+        self.is_running = False
+        self.is_paused = False
+        self.start_time = 0
+        self.pause_time = 0
+        self.total_paused_time = 0
+
+    def reset(self):
+        """Сбросить время, но оставить текущее состояние (запущен/на паузе)"""
+        current_state_running = self.is_running
+        current_state_paused = self.is_paused
+
+        self.stop()
+
+        if current_state_running or current_state_paused:
+            self.start_time = time.time()
+            self.total_paused_time = 0
+            if current_state_running:
+                self.is_running = True
+            else:  # current_state_paused
+                self.pause_time = time.time()
+                self.is_paused = True
+
+    def get_elapsed_time(self):
+        """Получить прошедшее время в секундах"""
+        if self.is_running:
+            current_time = time.time()
+            elapsed = current_time - self.start_time - self.total_paused_time
+            return elapsed
+        elif self.is_paused:
+            # Возвращаем время на момент паузы
+            return self.pause_time - self.start_time - self.total_paused_time
+        else:
+            # Секундомер остановлен
+            return 0
+
+    def get_formatted_time(self):
+        """Получить время в формате ММ:СС.ммм"""
+        elapsed = self.get_elapsed_time()
+        minutes = int(elapsed // 60)
+        seconds = int(elapsed % 60)
+        milliseconds = int((elapsed * 1000) % 1000)
+        return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+    def toggle(self):
+        """Переключить состояние: запуск/пауза"""
+        if self.is_running:
+            self.pause()
+        else:
+            self.start()
+
+    @property
+    def status(self):
+        """Текстовый статус секундомера"""
+        if self.is_running:
+            return "RUNNING"
+        elif self.is_paused:
+            return "PAUSED"
+        else:
+            return "STOPPED"
+
+stopwatch = Stopwatch()
 
 class PauseScreenView(arcade.View):
     """Окно паузы с возможностью продолжения игры"""
@@ -1052,6 +1144,8 @@ class ShopScreenView(arcade.View):
         # Возвращаемся в основную игру
         print(f"Возврат в игру после магазина")
 
+        stopwatch.toggle()
+
         if self.room != '_':
             x, y = self.coords
             game_view = GameView(x, y, self.element, self.level)
@@ -2029,6 +2123,9 @@ class GameView(arcade.View):
         self.block_texture = None
         self._load_textures()
 
+        self.stopwatch = stopwatch
+        self.stopwatch.toggle()
+
         # Сетка комнат для проверки
         self.room_grid = None
         self.setup()
@@ -2290,6 +2387,7 @@ class GameView(arcade.View):
         """Отрисовка игры"""
         self.clear()
 
+
         # Рисуем все с учетом смещения камеры
 
         # Сначала рисуем фоновые клетки (самый нижний слой)
@@ -2309,9 +2407,9 @@ class GameView(arcade.View):
                                              )
                 else:
                     # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
+                    arcade.draw_rect_filled(arcade.rect.XYWH(
                         screen_x, screen_y,
-                        tile.width, tile.height,
+                        tile.width, tile.height),
                         arcade.color.DARK_GREEN
                     )
 
@@ -2330,11 +2428,16 @@ class GameView(arcade.View):
                                              )
                 else:
                     # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
+                    arcade.draw_rect_filled(arcade.rect.XYWH(
                         screen_x, screen_y,
-                        tile.width, tile.height,
+                        tile.width, tile.height),
                         arcade.color.DARK_GREEN
                     )
+        arcade.draw_text(
+            f"Время: {self.stopwatch.get_formatted_time()}",
+            300, 680,
+            arcade.color.WHITE, 40
+        )
 
         # Рисуем сетку (только видимую часть)
         self._draw_grid()
@@ -2656,6 +2759,7 @@ class GameView(arcade.View):
             self.down_pressed = True
         elif key == arcade.key.ESCAPE:
             self.show_pause_screen()
+            self.stopwatch.toggle()
         elif key == arcade.key.PLUS or key == arcade.key.EQUAL:
             self.player_sprite.speed = min(self.player_sprite.speed + 1, 15)
         elif key == arcade.key.MINUS:
