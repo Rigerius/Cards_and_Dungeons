@@ -3494,6 +3494,10 @@ class CardGameView(arcade.View):
                                 self.defence.append([card.text, card.dict['damage'][0][0]])
                                 print(self.defence)
                                 self.defence_amount = sum([i[1] for i in self.defence])
+                        elif 'Уворот' in card.dict['effects'] and self.player and card.is_playable:
+                            if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                for mob in self.mobs:
+                                    mob.is_slowed = random.randrange(card.dict['damage'][0][0], card.dict['damage'][0][1] + 1)
                         else:
                             flag = 1
                             break
@@ -3522,6 +3526,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects'] and self.current_slime:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            self.current_slime.is_blinded = True
+                                            damage_pos = self.current_slime.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     card.is_mana = True
                         else:
                             flag = 1
@@ -3559,6 +3574,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_blinded = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     fake_mobs.remove(mob)
                                 card.is_mana = True
                         else:
@@ -3593,6 +3619,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_blinded = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                 card.is_mana = True
                         else:
                             flag = 1
@@ -3707,16 +3744,27 @@ class CardGameView(arcade.View):
     def continue_enemy_turn(self):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         for enemy in enemies:
-            damage = enemy.attack()
-            print(f"{enemy.name} атакует игрока на {damage} урона!")
-            # Добавляем частицу урона игроку
-            damage_pos = self.player.get_damage_position()
-            self.damage_emitter.add_damage(
-                damage_pos[0],
-                damage_pos[1],
-                damage,
-                False
-            )
+            if (random.randrange(1, 101) <= 60 and enemy.is_blinded) or (random.randrange(1, 101) <= enemy.is_slowed):
+                enemy.is_blinded = False
+                enemy.is_slowed = 0
+                damage = 0
+                damage_pos = self.player.get_damage_position()
+                self.damage_emitter.add_damage(
+                    damage_pos[0],
+                    damage_pos[1],
+                    'мимо',
+                    False
+                )
+                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+            else:
+                damage = enemy.attack()
+                damage_pos = self.player.get_damage_position()
+                self.damage_emitter.add_damage(
+                    damage_pos[0],
+                    damage_pos[1],
+                    damage,
+                    False
+                )
             if self.defence:
                 self.defence[0][1] -= damage
                 self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
