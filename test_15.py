@@ -3,6 +3,7 @@ import random
 import math
 import sys
 import os
+from datetime import *
 import time
 from dungeons import *
 from test_fight import *
@@ -115,8 +116,102 @@ class Stopwatch:
             return "PAUSED"
         else:
             return "STOPPED"
-
 stopwatch = Stopwatch()
+
+
+class TopView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.battles, self.top = history_info()
+        if len(self.top) > 5:
+            self.top = self.top[:5]
+        self.top = sorted(self.top, key=lambda x: datetime.strptime(x[1], "%M:%S.%f"))
+        self.setup()
+        self.background_texture = arcade.load_texture('images/backgrounds/топ.jpg')
+
+    def setup(self):
+        self.menu_button = Button(
+            x=self.window.width // 2,
+            y=80,
+            width=180,
+            height=50,
+            text="Меню",
+            color=arcade.color.DARK_ORANGE,
+            hover_color=arcade.color.ORANGE,
+            font_size=18
+        )
+
+    def on_draw(self):
+        self.clear()
+        arcade.draw_texture_rect(self.background_texture,
+                                 arcade.rect.XYWH(self.window.width // 2,
+                                                  self.window.height // 2,
+                                                  self.window.width,
+                                                  self.window.height)
+                                 )
+
+        if len(self.top) == 0:
+            arcade.draw_text(
+                'Вы пока ни разу не прошли игру.',
+                self.window.width // 2 + 20,
+                self.window.height - 200,
+                (109, 72, 8),
+                20,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            )
+        else:
+            arcade.draw_text(
+                'Рейтинг прохождений',
+                self.window.width // 2 + 20,
+                self.window.height - 200,
+                (109, 72, 8),
+                20,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True
+            )
+            for i, t in enumerate(self.top):
+                arcade.draw_text(
+                    f'{i + 1}. {t[1]}',
+                    self.window.width // 2 + 20,
+                    self.window.height - 230 - i * 30,
+                    (109, 72, 8),
+                    20,
+                    anchor_x="center",
+                    anchor_y="center",
+                    bold=True
+                )
+
+        self.menu_button.draw()
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        self.menu_button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.menu_button.check_hover(x, y):
+                self.menu_button.on_press()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            if self.menu_button.is_pressed and self.menu_button.check_hover(x, y):
+                self.menu_button.on_release()
+                self.return_to_menu()
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        try:
+            background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
+
 
 class PauseScreenView(arcade.View):
     """Окно паузы с возможностью продолжения игры"""
@@ -408,8 +503,13 @@ class DeathScreenView(arcade.View):
         self.element = element
         self.level = level
         self.result = None
-
         LIST_POSESH = []
+
+        if stopwatch.is_running:
+            self.result = stopwatch.get_formatted_time()
+        stopwatch.stop()
+        win = 0
+        save_result(self.result, win)
 
         # Получаем центр экрана
         center_x = 400
@@ -537,9 +637,6 @@ class DeathScreenView(arcade.View):
             bold=True
         )
 
-        if stopwatch.is_running:
-            self.result = stopwatch.get_formatted_time()
-        stopwatch.stop()
         arcade.draw_text(
             f"Время: {self.result}",
             self.window.width // 2, self.window.height * 0.45,
@@ -668,6 +765,7 @@ class DeathScreenView(arcade.View):
             if self.menu_button.check_hover(x, y):
                 stopwatch.toggle()
                 stopwatch.reset()
+                self.menu_button.on_press()
             if self.quit_button.check_hover(x, y):
                 self.quit_button.on_press()
 
@@ -767,6 +865,12 @@ class WinScreenView(arcade.View):
                 self.new_card = get_new_card()
                 self.new_card = " ".join(self.new_card['name'].split('/'))
                 CARDS_LIST = cards_list()
+            if self.level == 'третий':
+                if stopwatch.is_running:
+                    self.result = stopwatch.get_formatted_time()
+                stopwatch.stop()
+                win = 1
+                save_result(self.result, win)
         MONEY += self.reward
 
 
@@ -892,9 +996,6 @@ class WinScreenView(arcade.View):
                 anchor_y="center"
             )
 
-            if stopwatch.is_running:
-                self.result = stopwatch.get_formatted_time()
-            stopwatch.stop()
             arcade.draw_text(
                 f"Время: {self.result}",
                 self.window.width // 2, self.window.height * 0.52,
@@ -2244,7 +2345,15 @@ class GameView(arcade.View):
         self._load_textures()
 
         self.stopwatch = stopwatch
-        self.stopwatch.toggle()
+        self.stopwatch.start()
+
+        # Звуки ходьбы
+        self.walk_sounds = []
+        self.load_walk_sounds()
+
+        # Таймер для звуков шагов
+        self.walk_timer = 0
+        self.walk_sound_delay = 0.35  # Задержка между шагами
 
         # Сетка комнат для проверки
         self.room_grid = None
@@ -2654,6 +2763,54 @@ class GameView(arcade.View):
         arcade.draw_text("ESC - пауза",
                          10, screen_height - 120, arcade.color.LIGHT_GRAY, 16)
 
+    def load_walk_sounds(self):
+        """Загружает звуки ходьбы"""
+        try:
+            sound_files = [
+                "music\шаг0.mp3",
+                "music\шаг1.mp3",
+                "music\шаг2.mp3"
+            ]
+
+            for sound_file in sound_files:
+                try:
+                    sound = arcade.load_sound(sound_file)
+                    self.walk_sounds.append(sound)
+                    print(f"Загружен звук: {sound_file}")
+                except Exception as e:
+                    print(f"Не удалось загрузить {sound_file}: {e}")
+
+            # Если не загрузились кастомные, используем стандартные
+            if not self.walk_sounds:
+                self.load_default_walk_sounds()
+
+        except Exception as e:
+            print(f"Ошибка загрузки звуков: {e}")
+            self.load_default_walk_sounds()
+
+    def load_default_walk_sounds(self):
+        """Загружает стандартные звуки из ресурсов Arcade"""
+        try:
+            self.walk_sounds = [
+                arcade.load_sound(":resources:music\шаг0.mp3"),
+                arcade.load_sound(":resources:music\шаг1.mp3"),
+                arcade.load_sound(":resources:music\шаг2.mp3")  # Альтернативный звук
+            ]
+            print("Используются стандартные звуки шагов")
+        except:
+            print("Не удалось загрузить стандартные звуки")
+            self.walk_sounds = []
+
+    def play_random_walk_sound(self):
+        """Воспроизводит случайный звук шага"""
+        if self.walk_sounds:
+            sound = random.choice(self.walk_sounds)
+            # Случайная громкость для разнообразия
+            volume = random.uniform(0.2, 0.4)
+            # Случайная скорость воспроизведения
+            speed = random.uniform(0.9, 1.1)
+            arcade.play_sound(sound, volume=volume, speed=speed)
+
     def on_update(self, delta_time):
         global LIST_POSESH
         """Обновление логики игры"""
@@ -2784,6 +2941,17 @@ class GameView(arcade.View):
                     a[1] += dx
                     LIST_POSESH.append(a)
             self.start_card_game(self.player_sprite.center_x, self.player_sprite.center_y)
+
+        is_moving = (self.player_sprite.change_x != 0 or self.player_sprite.change_y != 0)
+
+        # Обновляем звуки ходьбы
+        if is_moving:
+            self.walk_timer += delta_time
+            if self.walk_timer >= self.walk_sound_delay:
+                self.play_random_walk_sound()
+                self.walk_timer = 0
+        else:
+            self.walk_timer = 0
 
         # Обновляем камеру
         self._center_camera_on_player()
@@ -3553,7 +3721,7 @@ class MenuView(arcade.View):
 
         button2 = Button(
             x=self.window.width // 2,
-            y=self.window.height * 0.55,
+            y=self.window.height * 0.58,
             width=300,
             height=60,
             text="Колода",
@@ -3563,7 +3731,7 @@ class MenuView(arcade.View):
 
         button3 = Button(
             x=self.window.width // 2,
-            y=self.window.height * 0.4,
+            y=self.window.height * 0.46,
             width=300,
             height=60,
             text="Настройки",
@@ -3573,7 +3741,17 @@ class MenuView(arcade.View):
 
         button4 = Button(
             x=self.window.width // 2,
-            y=self.window.height * 0.25,
+            y=self.window.height * 0.34,
+            width=300,
+            height=60,
+            text="Рейтинг",
+            color=arcade.color.DARK_ORANGE,
+            hover_color=arcade.color.ORANGE
+        )
+
+        button5 = Button(
+            x=self.window.width // 2,
+            y=self.window.height * 0.22,
             width=300,
             height=60,
             text="Выход",
@@ -3581,7 +3759,7 @@ class MenuView(arcade.View):
             hover_color=arcade.color.RED
         )
 
-        self.buttons = [button1, button2, button3, button4]
+        self.buttons = [button1, button2, button3, button4, button5]
 
     def on_show(self):
         """Вызывается при показе этого вида"""
@@ -3612,7 +3790,7 @@ class MenuView(arcade.View):
         arcade.draw_text(
             "v1.5 - Коллекционная карточная RPG",
             self.window.width // 2,
-            self.window.height * 0.8,
+            self.window.height * 0.78,
             arcade.color.LIGHT_GRAY,
             16,
             anchor_x="center",
@@ -3622,29 +3800,6 @@ class MenuView(arcade.View):
         # Рисуем все кнопки
         for button in self.buttons:
             button.draw()
-
-        # Рисуем статусный текст
-        if self.status_text:
-            arcade.draw_text(
-                self.status_text,
-                self.window.width // 2,
-                self.window.height * 0.2,
-                arcade.color.WHITE,
-                24,
-                anchor_x="center",
-                anchor_y="center"
-            )
-
-        # Инструкция внизу
-        arcade.draw_text(
-            "Нажмите на кнопку для выбора действия",
-            self.window.width // 2,
-            self.window.height * 0.1,
-            arcade.color.LIGHT_GRAY,
-            16,
-            anchor_x="center",
-            anchor_y="center"
-        )
 
     def on_mouse_motion(self, x, y, dx, dy):
         """Обработка движения мыши"""
@@ -3674,6 +3829,10 @@ class MenuView(arcade.View):
                     elif btn.text == "Настройки":
                         self.status_text = "Настройки открыты"
                         # Здесь можно добавить переход к экрану настроек
+
+                    elif btn.text == "Рейтинг":
+                        top_view = TopView()
+                        self.window.show_view(top_view)
 
                     elif btn.text == "Выход":
                         self.status_text = "Выход из игры..."
