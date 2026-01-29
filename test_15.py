@@ -620,8 +620,12 @@ class DeathScreenView(arcade.View):
         """Обработка нажатия мыши"""
         if button == arcade.MOUSE_BUTTON_LEFT and self.buttons_alpha > 0:
             if self.restart_button.check_hover(x, y):
+                stopwatch.toggle()
+                stopwatch.reset()
                 self.restart_button.on_press()
             if self.menu_button.check_hover(x, y):
+                stopwatch.toggle()
+                stopwatch.reset()
                 self.menu_button.on_press()
             if self.quit_button.check_hover(x, y):
                 self.quit_button.on_press()
@@ -879,6 +883,8 @@ class WinScreenView(arcade.View):
                     background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
                     menu_view = MenuView(background_texture)
                     self.window.show_view(menu_view)
+        stopwatch.toggle()
+        stopwatch.reset()
 
     def go_to_shop(self):
         """Переход в магазин для выбора карт"""
@@ -2433,11 +2439,7 @@ class GameView(arcade.View):
                         tile.width, tile.height),
                         arcade.color.DARK_GREEN
                     )
-        arcade.draw_text(
-            f"Время: {self.stopwatch.get_formatted_time()}",
-            300, 680,
-            arcade.color.WHITE, 40
-        )
+
 
         # Рисуем сетку (только видимую часть)
         self._draw_grid()
@@ -2474,6 +2476,8 @@ class GameView(arcade.View):
         # Рисуем HUD (без смещения камеры)
         self._draw_hud()
 
+
+
     def _draw_grid(self):
         """Рисуем клеточную сетку только для видимой область"""
         # Определяем видимую область
@@ -2506,13 +2510,13 @@ class GameView(arcade.View):
 
     def _draw_hud(self):
         """Рисует интерфейс"""
-        screen_width = self.window.width
-        screen_height = self.window.height
+        screen_width = self.window.width-100
+        screen_height = self.window.height-30
 
         # Полупрозрачная панель для текста
         arcade.draw_lrbt_rectangle_filled(
-            0, 400,
-            screen_height - 200, screen_height,
+            0, 300,
+            screen_height - 130, screen_height,
             (0, 0, 0, 150)
         )
 
@@ -2521,42 +2525,23 @@ class GameView(arcade.View):
                          arcade.color.YELLOW, 24,
                          anchor_x="center", anchor_y="center")
 
-        arcade.draw_text(f"Позиция: ({int(self.player_sprite.center_x)}, {int(self.player_sprite.center_y)})",
-                         10, screen_height - 20, arcade.color.WHITE, 14)
-        arcade.draw_text(f"Скорость: {self.player_sprite.speed}",
-                         10, screen_height - 45, arcade.color.WHITE, 14)
-        arcade.draw_text(f"Блоков: {self.total_sprites}",
-                         10, screen_height - 70, arcade.color.WHITE, 14)
-        # Обновляем статистику для отображения фоновых клеток
-        arcade.draw_text(f"Фоновых клеток: {self.total_background_sprites}",
-                         10, screen_height - 95, arcade.color.WHITE, 14)
-        arcade.draw_text(f"Видимых спрайтов: {self.visible_sprites}",
-                         10, screen_height - 120, arcade.color.WHITE, 14)
+        arcade.draw_text(
+            f"Время: {self.stopwatch.get_formatted_time()}",
+            10, screen_height - 30,
+            arcade.color.WHITE, 14)
 
         arcade.draw_text(f"element: {self.element}",
                          100, screen_height - 10, arcade.color.WHITE, 14)
 
-        # Статус блокировки
-        status_text = "Статус: Свободен"
-        status_color = arcade.color.GREEN
-        if self.player_sprite.is_blocked:
-            status_text = "Статус: Заблокирован"
-            status_color = arcade.color.RED
-            if self.block_direction:
-                status_text += f" ({self.block_direction})"
-
-        arcade.draw_text(status_text,
-                         10, screen_height - 145, status_color, 14)
-
         arcade.draw_text(f"FPS: {self.fps_text}",
-                         screen_width - 100, screen_height - 30,
+                         screen_width - 100, screen_height - 35,
                          arcade.color.LIGHT_GREEN, 14,
                          anchor_x="right")
 
         arcade.draw_text("Управление: WASD/Стрелки",
-                         10, screen_height - 170, arcade.color.LIGHT_GRAY, 12)
-        arcade.draw_text("ESC - меню, +/- - скорость, SPACE - телепорт",
-                         10, screen_height - 195, arcade.color.LIGHT_GRAY, 12)
+                         10, screen_height - 70, arcade.color.LIGHT_GRAY, 12)
+        arcade.draw_text("ESC - пауза",
+                         10, screen_height - 95, arcade.color.LIGHT_GRAY, 12)
 
     def on_update(self, delta_time):
         global LIST_POSESH
