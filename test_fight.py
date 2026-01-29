@@ -2,9 +2,9 @@ import arcade
 import random
 from cards_test_1 import *
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH, SCREEN_HEIGHT = int(800 * 1.28), int(600 * 1.28)
 TITLE = "Карточная игра"
-
+const = 1.28
 
 class Card:
     """Класс для представления игровой карты с выдвигающимся эффектом"""
@@ -711,6 +711,50 @@ class Fight_player:
         # Всегда 5 ромбиков для отображения
         self.diamond_count = 5
 
+        # Звуки ходьбы
+        self.walk_sounds = []
+        self.load_walk_sounds()
+
+        # Таймер для звуков шагов
+        self.walk_timer = 0
+        self.walk_sound_delay = 0.3  # Задержка между шагами (секунды)
+
+    def load_walk_sounds(self):
+        """Загружает звуки ходьбы"""
+        try:
+            # Пробуем загрузить кастомные звуки
+            sound_files = ["music\шаг0.mp3", "music\шаг0.mp3", "music\шаг0.mp3"]
+            for sound_file in sound_files:
+                sound = arcade.load_sound(sound_file)
+                self.walk_sounds.append(sound)
+            print(f"Загружено {len(self.walk_sounds)} звуков ходьбы")
+        except:
+            # Используем звуки из ресурсов Arcade
+            print("Используем стандартные звуки шагов")
+            self.walk_sounds = [
+                arcade.load_sound(":resources:music\шаг0.mp3"),
+                arcade.load_sound(":resources:music\шаг1.mp3"),
+                arcade.load_sound(":resources:music\шаг2.mp3")
+            ]
+
+    def update_walk_sound(self, delta_time, is_moving):
+        """Обновляет таймер и воспроизводит звуки шагов"""
+        if is_moving:
+            self.walk_timer += delta_time
+            if self.walk_timer >= self.walk_sound_delay:
+                self.play_walk_sound()
+                self.walk_timer = 0
+        else:
+            self.walk_timer = 0
+
+    def play_walk_sound(self):
+        """Воспроизводит случайный звук шага"""
+        if self.walk_sounds:
+            sound = random.choice(self.walk_sounds)
+            # Воспроизводим с небольшим случайным изменением громкости для реалистичности
+            volume = random.uniform(0.3, 0.5)
+            arcade.play_sound(sound, volume=volume)
+
     def draw(self):
         """Отрисовка игрока и его характеристик"""
         # Рисуем изображение игрока в левом центре
@@ -949,6 +993,7 @@ class Fight_player:
             self.current_mana = int(self.max_mana * ratio)
         else:
             self.current_mana = self.max_mana
+
 
 class EndTurnButton:
     """Кнопка завершения хода"""
@@ -1318,4 +1363,3 @@ class EndTurnButton:
             print(f"{self.current_slime.name} повержен!")
         else:
             print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")"""
-
