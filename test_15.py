@@ -12,13 +12,18 @@ from emitter_damage import *
 
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
-TITLE = "Игра с меню и спрайтами"
+TITLE = "Cards&Dungeons"
 TILE_SIZE = 64
 PLAYER_SPEED = 10
 MONEY = 0
 DUNGEON_MAP = {}
 dun = None
 LIST_POSESH = []
+SETTINGS = {
+    "dungeon_sounds": True,
+    "game_sounds": True
+}
+load_settings()
 CARDS_LIST = cards_list()
 CURRENT_COLODA = CurrentColoda()
 if len(CARDS_LIST) < 15:
@@ -26,37 +31,6 @@ if len(CARDS_LIST) < 15:
     init_current_coloda()
     CARDS_LIST = cards_list()
     CURRENT_COLODA = CurrentColoda()
-
-SETTINGS = {
-    "dungeon_sounds": True,
-    "game_sounds": True
-}
-
-def load_settings():
-    """Загружает настройки из файла"""
-    global SETTINGS
-    try:
-        if os.path.exists("settings.json"):
-            with open("settings.json", "r", encoding="utf-8") as f:
-                import json
-                loaded_settings = json.load(f)
-                SETTINGS.update(loaded_settings)
-                print(f"Настройки загружены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
-    except Exception as e:
-        print(f"Ошибка загрузки настроек: {e}")
-
-def save_settings():
-    """Сохраняет настройки в файл"""
-    try:
-        with open("settings.json", "w", encoding="utf-8") as f:
-            import json
-            json.dump(SETTINGS, f, ensure_ascii=False, indent=2)
-            print(f"Настройки сохранены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
-    except Exception as e:
-        print(f"Ошибка сохранения настроек: {e}")
-
-# Загружаем настройки при запуске
-load_settings()
 
 
 class SettingsView(arcade.View):
@@ -76,7 +50,7 @@ class SettingsView(arcade.View):
         dungeon_text = "Звуки в подземелье: ВКЛ" if SETTINGS["dungeon_sounds"] else "Звуки в подземелье: ВЫКЛ"
         self.dungeon_sounds_button = Button(
             x=center_x,
-            y=self.window.height * 0.7,
+            y=self.window.height * 0.66,
             width=450,
             height=60,
             text=dungeon_text,
@@ -89,7 +63,7 @@ class SettingsView(arcade.View):
         game_text = "Звуки игры: ВКЛ" if SETTINGS["game_sounds"] else "Звуки игры: ВЫКЛ"
         self.game_sounds_button = Button(
             x=center_x,
-            y=self.window.height * 0.58,
+            y=self.window.height * 0.47,
             width=350,
             height=60,
             text=game_text,
@@ -102,7 +76,7 @@ class SettingsView(arcade.View):
         self.dungeon_description = arcade.Text(
             "Шаги, столкновения со стенами и другие звуки в подземелье",
             center_x,
-            self.window.height * 0.65,
+            self.window.height * 0.6,
             arcade.color.LIGHT_GRAY,
             16,
             anchor_x="center",
@@ -112,7 +86,7 @@ class SettingsView(arcade.View):
         self.game_description = arcade.Text(
             "Звуки победы, поражения и другие игровые события",
             center_x,
-            self.window.height * 0.53,
+            self.window.height * 0.4,
             arcade.color.LIGHT_GRAY,
             16,
             anchor_x="center",
@@ -121,8 +95,8 @@ class SettingsView(arcade.View):
 
         # Кнопка сохранения настроек
         self.save_button = Button(
-            x=center_x - 100,
-            y=self.window.height * 0.35,
+            x=center_x - 180,
+            y=self.window.height * 0.2,
             width=250,
             height=60,
             text="Сохранить",
@@ -133,8 +107,8 @@ class SettingsView(arcade.View):
 
         # Кнопка отмены
         self.cancel_button = Button(
-            x=center_x + 100,
-            y=self.window.height * 0.35,
+            x=center_x + 180,
+            y=self.window.height * 0.2,
             width=250,
             height=60,
             text="Отмена",
@@ -289,6 +263,7 @@ class SettingsView(arcade.View):
             menu_view = MenuView()
         self.window.show_view(menu_view)
 
+
 class Stopwatch:
     def __init__(self):
         self.start_time = 0  # Время запуска секундомера
@@ -379,7 +354,6 @@ class Stopwatch:
             return "PAUSED"
         else:
             return "STOPPED"
-
 stopwatch = Stopwatch()
 
 
@@ -1199,7 +1173,6 @@ class WinScreenView(arcade.View):
         if not self.sound_played and self.victory_sound and SETTINGS.get("game_sounds", True):
             arcade.play_sound(self.victory_sound, volume=0.6)
             self.sound_played = True
-            print(f"Воспроизведен звук победы (game_sounds={SETTINGS['game_sounds']})")
 
     def load_settings(self):
         """Загружает настройки из файла"""
@@ -1244,7 +1217,6 @@ class WinScreenView(arcade.View):
         if not self.sound_played and self.victory_sound and SETTINGS.get("game_sounds", True):
             arcade.play_sound(self.victory_sound, volume=0.6)
             self.sound_played = True
-            print(f"Воспроизведен звук победы (game_sounds={SETTINGS['game_sounds']})")
 
     def on_draw(self):
         """Отрисовка экрана победы"""
@@ -2996,11 +2968,6 @@ class GameView(arcade.View):
         """Отрисовка игры"""
         self.clear()
 
-
-        # Рисуем все с учетом смещения камеры
-
-        # Сначала рисуем фоновые клетки (самый нижний слой)
-        # Используем тот же подход, что и для блоков
         for tile in self.background_sprites:
             screen_x = tile.center_x - self.camera_offset_x
             screen_y = tile.center_y - self.camera_offset_y
@@ -3014,13 +2981,6 @@ class GameView(arcade.View):
                                              arcade.rect.XYWH(screen_x, screen_y,
                                                               tile.width, tile.height)
                                              )
-                else:
-                    # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rect_filled(arcade.rect.XYWH(
-                        screen_x, screen_y,
-                        tile.width, tile.height),
-                        arcade.color.DARK_GREEN
-                    )
 
         for tile in self.room_sprites:
             screen_x = tile.center_x - self.camera_offset_x
@@ -3035,13 +2995,6 @@ class GameView(arcade.View):
                                              arcade.rect.XYWH(screen_x, screen_y,
                                                               tile.width, tile.height)
                                              )
-                else:
-                    # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rect_filled(arcade.rect.XYWH(
-                        screen_x, screen_y,
-                        tile.width, tile.height),
-                        arcade.color.DARK_GREEN
-                    )
 
         # Рисуем сетку (только видимую часть)
         self._draw_grid()
@@ -3060,13 +3013,6 @@ class GameView(arcade.View):
                                              arcade.rect.XYWH(screen_x, screen_y,
                                                               block.width, block.height)
                                              )
-                else:
-                    # Если нет текстуры, рисуем цветной квадрат
-                    arcade.draw_rectangle_filled(
-                        screen_x, screen_y,
-                        block.width, block.height,
-                        arcade.color.RED
-                    )
 
         # Рисуем игрока с учетом смещения камеры
         player_screen_x = self.player_sprite.center_x - self.camera_offset_x
@@ -3282,10 +3228,6 @@ class GameView(arcade.View):
                 self.block_movement = True
             else:
                 self.block_movement = self.player_sprite.change_x != 0 and self.player_sprite.change_y != 0
-
-            # Воспроизводим звук столкновения
-            if self.collision_sound and self.player_sprite.is_blocked:
-                arcade.play_sound(self.collision_sound, volume=0.3)
 
         # Проверка границ мира
         margin = TILE_SIZE * 0.5
@@ -3840,6 +3782,10 @@ class CardGameView(arcade.View):
                                 self.defence.append([card.text, card.dict['damage'][0][0]])
                                 print(self.defence)
                                 self.defence_amount = sum([i[1] for i in self.defence])
+                        elif 'Уворот' in card.dict['effects'] and self.player and card.is_playable:
+                            if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                for mob in self.mobs:
+                                    mob.is_slowed = random.randrange(card.dict['damage'][0][0], card.dict['damage'][0][1] + 1)
                         else:
                             flag = 1
                             break
@@ -3868,6 +3814,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects'] and self.current_slime:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            self.current_slime.is_blinded = True
+                                            damage_pos = self.current_slime.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     card.is_mana = True
                         else:
                             flag = 1
@@ -3905,6 +3862,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_blinded = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     fake_mobs.remove(mob)
                                 card.is_mana = True
                         else:
@@ -3939,6 +3907,17 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
+                                    if 'Ослепление' in card.dict['effects']:
+                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
+                                            mob.is_blinded = True
+                                            damage_pos = mob.get_damage_position()
+                                            self.damage_emitter.add_damage(
+                                                damage_pos[0],
+                                                damage_pos[1],
+                                                '𖤓',
+                                                False
+                                            )
+                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                 card.is_mana = True
                         else:
                             flag = 1
@@ -4039,7 +4018,6 @@ class CardGameView(arcade.View):
             for enemy in enemies:
                 if enemy.is_stunned:
                     enemy.end_animation = True
-                    enemy.is_stunned = False
                 else:
                     enemy.start_animation()
         else:
@@ -4053,36 +4031,50 @@ class CardGameView(arcade.View):
     def continue_enemy_turn(self):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         for enemy in enemies:
-            damage = enemy.attack()
-            print(f"{enemy.name} атакует игрока на {damage} урона!")
-            # Добавляем частицу урона игроку
-            damage_pos = self.player.get_damage_position()
-            self.damage_emitter.add_damage(
-                damage_pos[0],
-                damage_pos[1],
-                damage,
-                False
-            )
-            if self.defence:
-                self.defence[0][1] -= damage
-                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
-                if self.defence[0][1] <= 0:
-                    self.defence.remove(self.defence[0])
-                if self.defence:
-                    self.defence_amount = sum([i[1] for i in self.defence])
-                else:
-                    self.defence_amount = 0
+            if enemy.is_stunned:
+                enemy.is_stunned = False
             else:
-                self.player.take_damage(damage)
-            if self.player.current_hp <= 0:
-                print("Игрок повержен! Показываем экран смерти.")
+                if (random.randrange(1, 101) <= 60 and enemy.is_blinded) or (random.randrange(1, 101) <= enemy.is_slowed):
+                    enemy.is_blinded = False
+                    enemy.is_slowed = 0
+                    damage = 0
+                    damage_pos = self.player.get_damage_position()
+                    self.damage_emitter.add_damage(
+                        damage_pos[0],
+                        damage_pos[1],
+                        'мимо',
+                        False
+                    )
+                    self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+                else:
+                    damage = enemy.attack()
+                    damage_pos = self.player.get_damage_position()
+                    self.damage_emitter.add_damage(
+                        damage_pos[0],
+                        damage_pos[1],
+                        damage,
+                        False
+                    )
+                if self.defence:
+                    self.defence[0][1] -= damage
+                    self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
+                    if self.defence[0][1] <= 0:
+                        self.defence.remove(self.defence[0])
+                    if self.defence:
+                        self.defence_amount = sum([i[1] for i in self.defence])
+                    else:
+                        self.defence_amount = 0
+                else:
+                    self.player.take_damage(damage)
+                if self.player.current_hp <= 0:
+                    print("Игрок повержен! Показываем экран смерти.")
 
-                # Создаем и показываем экран смерти
-                death_screen = DeathScreenView(self.element, self.level)
-                # Восстанавливаем размер окна
-                self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
-                self.window.show_view(death_screen)
-                return
+                    # Создаем и показываем экран смерти
+                    death_screen = DeathScreenView(self.element, self.level)
+                    # Восстанавливаем размер окна
+                    self.window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    self.window.show_view(death_screen)
+                    return
 
         if all(enemy.end_animation is False for enemy in self.mobs if enemy.is_alive):
             self.is_player_turn = True
@@ -4294,7 +4286,6 @@ def main():
     """Главная функция"""
     # Загружаем настройки при запуске
     load_settings()
-
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, TITLE)
 
     background_texture = None
