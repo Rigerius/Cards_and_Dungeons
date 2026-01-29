@@ -691,22 +691,22 @@ class Fight_player:
                 self.image = None
 
         # Позиция и размер изображения игрока (левый центр экрана)
-        self.image_x = 120  # Сдвинуто левее
-        self.image_y = 300  # Выше центра
-        self.image_width = 125  # Увеличенный размер
-        self.image_height = 165  # Увеличенный размер
+        self.image_x = int(120*1.28)  # Сдвинуто левее
+        self.image_y = int(300*1.28)  # Выше центра
+        self.image_width = int(125*1.28)  # Увеличенный размер
+        self.image_height = int(165*1.28)  # Увеличенный размер
         self.last_damage_position = (self.image_x, self.image_y)
 
         # Параметры для отображения здоровья (левый верхний угол)
-        self.heart_x = 80  # Позиция сердца в левом углу
-        self.heart_y = 520  # Вверху экрана
-        self.heart_size = 90  # Уменьшенный на 10% (было 100)
+        self.heart_x = int(80*1.28)  # Позиция сердца в левом углу
+        self.heart_y = int(520*1.28)  # Вверху экрана
+        self.heart_size = int(90*1.28)  # Уменьшенный на 10% (было 100)
 
         # Параметры для отображения маны (под сердцем в левом углу)
         self.mana_diamonds_x = self.heart_x  # Под сердцем
         self.mana_diamonds_y = self.heart_y - 85  # Ближе к сердцу
-        self.diamond_size = 22  # Уменьшенный на 10% (было 25)
-        self.diamond_spacing = 27  # Уменьшенный на 10% (было 30)
+        self.diamond_size = 25
+        self.diamond_spacing = 30
 
         # Всегда 5 ромбиков для отображения
         self.diamond_count = 5
@@ -949,7 +949,6 @@ class Fight_player:
             self.current_mana = int(self.max_mana * ratio)
         else:
             self.current_mana = self.max_mana
-
 
 class EndTurnButton:
     """Кнопка завершения хода"""
@@ -1319,3 +1318,4 @@ class EndTurnButton:
             print(f"{self.current_slime.name} повержен!")
         else:
             print(f"{self.current_slime.name} осталось {self.current_slime.current_hp} HP")"""
+
