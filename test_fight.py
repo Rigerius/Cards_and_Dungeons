@@ -319,7 +319,7 @@ class Mob:
         self.last_damage_position = (x, y)
         self.is_stunned = False
         self.is_blinded = False
-        self.is_slowed = False
+        self.is_slowed = 0
 
         # Загрузка изображения моба
         self.image = None
