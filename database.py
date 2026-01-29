@@ -1,9 +1,9 @@
 import sqlite3
-from dungeon_1 import dun_250
+from dungeon_2 import dun_2
 
-for i in range(len(dun_250)):
-    dun_250[i] = '/'.join(dun_250[i])
-dun = '|'.join(dun_250)
+for i in range(len(dun_2)):
+    dun_2[i] = '/'.join(dun_2[i])
+dun = '|'.join(dun_2)
 
 con = sqlite3.connect('database/database.db')
 cur = con.cursor()
@@ -12,7 +12,7 @@ cur.execute('CREATE TABLE IF NOT EXISTS Dungeons('
             'name TEXT NOT NULL,'
             'list TEXT NOT NULL,'
             'start TEXT NOT NULL)')
-"""cur.execute('INSERT INTO Dungeons(name, list, start) VALUES (?, ?, ?)', ('dungeon_1', dun, '125, 1'))"""
+cur.execute('INSERT INTO Dungeons(name, list, start) VALUES (?, ?, ?)', ('dungeon_1', dun, '125, 1'))
 cur.execute('CREATE TABLE IF NOT EXISTS Cards('
             'id INTEGER PRIMARY KEY AUTOINCREMENT,'
             'name TEXT NOT NULL,'
