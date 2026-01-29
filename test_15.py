@@ -3,6 +3,7 @@ import random
 import math
 import sys
 import os
+import json
 from datetime import *
 import time
 from dungeons import *
@@ -25,6 +26,268 @@ if len(CARDS_LIST) < 15:
     init_current_coloda()
     CARDS_LIST = cards_list()
     CURRENT_COLODA = CurrentColoda()
+
+SETTINGS = {
+    "dungeon_sounds": True,
+    "game_sounds": True
+}
+
+def load_settings():
+    """Загружает настройки из файла"""
+    global SETTINGS
+    try:
+        if os.path.exists("settings.json"):
+            with open("settings.json", "r", encoding="utf-8") as f:
+                import json
+                loaded_settings = json.load(f)
+                SETTINGS.update(loaded_settings)
+                print(f"Настройки загружены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
+    except Exception as e:
+        print(f"Ошибка загрузки настроек: {e}")
+
+def save_settings():
+    """Сохраняет настройки в файл"""
+    try:
+        with open("settings.json", "w", encoding="utf-8") as f:
+            import json
+            json.dump(SETTINGS, f, ensure_ascii=False, indent=2)
+            print(f"Настройки сохранены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
+    except Exception as e:
+        print(f"Ошибка сохранения настроек: {e}")
+
+# Загружаем настройки при запуске
+load_settings()
+
+
+class SettingsView(arcade.View):
+    """Экран настроек игры"""
+
+    def __init__(self, background_texture=None):
+        super().__init__()
+        self.background_texture = background_texture
+        self.buttons = []
+        self.setup()
+
+    def setup(self):
+        """Настройка интерфейса"""
+        center_x = self.window.width // 2
+
+        # Кнопка включения/выключения звуков в подземелье
+        dungeon_text = "Звуки в подземелье: ВКЛ" if SETTINGS["dungeon_sounds"] else "Звуки в подземелье: ВЫКЛ"
+        self.dungeon_sounds_button = Button(
+            x=center_x,
+            y=self.window.height * 0.7,
+            width=450,
+            height=60,
+            text=dungeon_text,
+            color=arcade.color.DARK_GREEN if SETTINGS["dungeon_sounds"] else arcade.color.DARK_RED,
+            hover_color=arcade.color.GREEN if SETTINGS["dungeon_sounds"] else arcade.color.RED,
+            font_size=22
+        )
+
+        # Кнопка включения/выключения звуков игры (победа/смерть)
+        game_text = "Звуки игры: ВКЛ" if SETTINGS["game_sounds"] else "Звуки игры: ВЫКЛ"
+        self.game_sounds_button = Button(
+            x=center_x,
+            y=self.window.height * 0.58,
+            width=350,
+            height=60,
+            text=game_text,
+            color=arcade.color.DARK_BLUE if SETTINGS["game_sounds"] else arcade.color.DARK_RED,
+            hover_color=arcade.color.LIGHT_BLUE if SETTINGS["game_sounds"] else arcade.color.RED,
+            font_size=22
+        )
+
+        # Описание настроек
+        self.dungeon_description = arcade.Text(
+            "Шаги, столкновения со стенами и другие звуки в подземелье",
+            center_x,
+            self.window.height * 0.65,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        self.game_description = arcade.Text(
+            "Звуки победы, поражения и другие игровые события",
+            center_x,
+            self.window.height * 0.53,
+            arcade.color.LIGHT_GRAY,
+            16,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Кнопка сохранения настроек
+        self.save_button = Button(
+            x=center_x - 100,
+            y=self.window.height * 0.35,
+            width=250,
+            height=60,
+            text="Сохранить",
+            color=arcade.color.DARK_GREEN,
+            hover_color=arcade.color.GREEN,
+            font_size=22
+        )
+
+        # Кнопка отмены
+        self.cancel_button = Button(
+            x=center_x + 100,
+            y=self.window.height * 0.35,
+            width=250,
+            height=60,
+            text="Отмена",
+            color=arcade.color.DARK_RED,
+            hover_color=arcade.color.RED,
+            font_size=22
+        )
+
+        self.buttons = [
+            self.dungeon_sounds_button, self.game_sounds_button,
+            self.save_button, self.cancel_button
+        ]
+
+    def on_draw(self):
+        """Отрисовка экрана настроек"""
+        self.clear()
+
+        # Рисуем фон
+        if self.background_texture:
+            arcade.draw_texture_rect(
+                self.background_texture,
+                arcade.rect.XYWH(
+                    self.window.width // 2,
+                    self.window.height // 2,
+                    self.window.width,
+                    self.window.height
+                )
+            )
+
+        # Затемняющий слой
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(
+                self.window.width // 2,
+                self.window.height // 2,
+                self.window.width,
+                self.window.height
+            ),
+            (0, 0, 0, 180)
+        )
+
+        # Заголовок
+        arcade.draw_text(
+            "НАСТРОЙКИ ЗВУКА",
+            self.window.width // 2,
+            self.window.height * 0.85,
+            arcade.color.GOLD,
+            48,
+            anchor_x="center",
+            anchor_y="center",
+            bold=True
+        )
+
+        # Подсказка
+        arcade.draw_text(
+            "Настройте звуковые эффекты по своему вкусу",
+            self.window.width // 2,
+            self.window.height * 0.78,
+            arcade.color.LIGHT_GRAY,
+            20,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        # Рисуем описания
+        self.dungeon_description.draw()
+        self.game_description.draw()
+
+        # Рисуем все кнопки
+        for button in self.buttons:
+            button.draw()
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Обработка движения мыши"""
+        for button in self.buttons:
+            button.check_hover(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Обработка нажатия мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            for btn in self.buttons:
+                if btn.check_hover(x, y):
+                    btn.on_press()
+
+                    # Обработка кнопки звуков подземелья
+                    if btn == self.dungeon_sounds_button:
+                        self.toggle_dungeon_sounds()
+
+                    # Обработка кнопки звуков игры
+                    elif btn == self.game_sounds_button:
+                        self.toggle_game_sounds()
+
+                    # Кнопка сохранения
+                    elif btn == self.save_button:
+                        self.save_settings()
+                        self.return_to_menu()
+
+                    # Кнопка отмены
+                    elif btn == self.cancel_button:
+                        # Перезагружаем настройки из файла, чтобы отменить изменения
+                        load_settings()
+                        self.return_to_menu()
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Обработка отпускания мыши"""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            for btn in self.buttons:
+                if btn.is_pressed:
+                    btn.on_release()
+
+    def toggle_dungeon_sounds(self):
+        """Включение/выключение звуков в подземелье"""
+        SETTINGS["dungeon_sounds"] = not SETTINGS["dungeon_sounds"]
+
+        # Обновляем текст и цвет кнопки
+        if SETTINGS["dungeon_sounds"]:
+            self.dungeon_sounds_button.text = "Звуки в подземелье: ВКЛ"
+            self.dungeon_sounds_button.color = arcade.color.DARK_GREEN
+            self.dungeon_sounds_button.hover_color = arcade.color.GREEN
+        else:
+            self.dungeon_sounds_button.text = "Звуки в подземелье: ВЫКЛ"
+            self.dungeon_sounds_button.color = arcade.color.DARK_RED
+            self.dungeon_sounds_button.hover_color = arcade.color.RED
+
+        print(f"Звуки подземелья: {'ВКЛ' if SETTINGS['dungeon_sounds'] else 'ВЫКЛ'}")
+
+    def toggle_game_sounds(self):
+        """Включение/выключение звуков игры"""
+        SETTINGS["game_sounds"] = not SETTINGS["game_sounds"]
+
+        # Обновляем текст и цвет кнопки
+        if SETTINGS["game_sounds"]:
+            self.game_sounds_button.text = "Звуки игры: ВКЛ"
+            self.game_sounds_button.color = arcade.color.DARK_BLUE
+            self.game_sounds_button.hover_color = arcade.color.LIGHT_BLUE
+        else:
+            self.game_sounds_button.text = "Звуки игры: ВЫКЛ"
+            self.game_sounds_button.color = arcade.color.DARK_RED
+            self.game_sounds_button.hover_color = arcade.color.RED
+
+        print(f"Звуки игры: {'ВКЛ' if SETTINGS['game_sounds'] else 'ВЫКЛ'}")
+
+    def save_settings(self):
+        """Сохраняет настройки в файл"""
+        save_settings()
+
+    def return_to_menu(self):
+        """Возврат в главное меню"""
+        try:
+            background_texture = arcade.load_texture("images/backgrounds/Меню.jpg")
+            menu_view = MenuView(background_texture)
+        except:
+            menu_view = MenuView()
+        self.window.show_view(menu_view)
 
 class Stopwatch:
     def __init__(self):
@@ -116,6 +379,7 @@ class Stopwatch:
             return "PAUSED"
         else:
             return "STOPPED"
+
 stopwatch = Stopwatch()
 
 
@@ -515,6 +779,16 @@ class DeathScreenView(arcade.View):
         center_x = 400
         center_y = 300
 
+        # Загружаем настройки
+        self.settings = self.load_settings()
+
+        self.music = arcade.load_sound("music/lose.mp3")
+
+        # Воспроизводим звук только если включены звуки игры
+        if self.music and SETTINGS.get("game_sounds", True):
+            arcade.play_sound(self.music, volume=0.6)
+            print(f"Воспроизведен звук поражения (game_sounds={SETTINGS['game_sounds']})")
+
         # Кнопки - выровнены по центру и расположены вертикально
         self.restart_button = Button(
             x=center_x + 140,  # Центр по горизонтали
@@ -555,6 +829,24 @@ class DeathScreenView(arcade.View):
 
         if self.music:
             arcade.play_sound(self.music, volume=0.6)
+
+    def load_settings(self):
+        """Загружает настройки из файла"""
+        settings = {
+            "dungeon_sounds": True,
+            "game_sounds": True
+        }
+
+        try:
+            if os.path.exists("settings.json"):
+                with open("settings.json", "r", encoding="utf-8") as f:
+                    import json
+                    loaded_settings = json.load(f)
+                    settings.update(loaded_settings)
+        except Exception as e:
+            print(f"Ошибка загрузки настроек: {e}")
+
+        return settings
 
     def load_death_phrases(self):
         """Загружает фразы из файла"""
@@ -895,14 +1187,37 @@ class WinScreenView(arcade.View):
         self.buttons_alpha = 0
         self.animation_timer = 0
 
+        # Загружаем настройки
+        self.settings = self.load_settings()
+
         # Звук победы
         self.victory_sound = None
         self.sound_played = False
         self.load_sounds()
 
-        if not self.sound_played and self.victory_sound:
+        # Воспроизводим звук только если включены звуки игры
+        if not self.sound_played and self.victory_sound and SETTINGS.get("game_sounds", True):
             arcade.play_sound(self.victory_sound, volume=0.6)
             self.sound_played = True
+            print(f"Воспроизведен звук победы (game_sounds={SETTINGS['game_sounds']})")
+
+    def load_settings(self):
+        """Загружает настройки из файла"""
+        settings = {
+            "dungeon_sounds": True,
+            "game_sounds": True
+        }
+
+        try:
+            if os.path.exists("settings.json"):
+                with open("settings.json", "r", encoding="utf-8") as f:
+                    import json
+                    loaded_settings = json.load(f)
+                    settings.update(loaded_settings)
+        except Exception as e:
+            print(f"Ошибка загрузки настроек: {e}")
+
+        return settings
 
     def load_sounds(self):
         """Загружает звуки"""
@@ -916,7 +1231,6 @@ class WinScreenView(arcade.View):
             except:
                 print("Не удалось загрузить звук победы")
 
-
     def on_show(self):
         """Вызывается при показе экрана победы"""
         arcade.set_background_color(arcade.color.BLACK)
@@ -926,9 +1240,11 @@ class WinScreenView(arcade.View):
         self.buttons_alpha = 0
         self.animation_timer = 0
 
-        if not self.sound_played and self.victory_sound:
+        # Воспроизводим звук только если включены звуки игры
+        if not self.sound_played and self.victory_sound and SETTINGS.get("game_sounds", True):
             arcade.play_sound(self.victory_sound, volume=0.6)
             self.sound_played = True
+            print(f"Воспроизведен звук победы (game_sounds={SETTINGS['game_sounds']})")
 
     def on_draw(self):
         """Отрисовка экрана победы"""
@@ -2358,6 +2674,9 @@ class GameView(arcade.View):
         self.block_movement = False
         self.block_direction = None
 
+        # Загружаем настройки
+        self.settings = self.load_settings()
+
         # Статистика
         self.fps_text = ""
         self.visible_sprites = 0
@@ -2388,6 +2707,37 @@ class GameView(arcade.View):
         # Сетка комнат для проверки
         self.room_grid = None
         self.setup()
+
+    def load_settings(self):
+        """Загружает настройки из файла"""
+        settings = {
+            "dungeon_sounds": True,
+            "game_sounds": True
+        }
+
+        try:
+            if os.path.exists("settings.json"):
+                with open("settings.json", "r", encoding="utf-8") as f:
+                    import json
+                    loaded_settings = json.load(f)
+                    settings.update(loaded_settings)
+        except Exception as e:
+            print(f"Ошибка загрузки настроек: {e}")
+
+        return settings
+
+    def play_random_walk_sound(self):
+        """Воспроизводит случайный звук шага с учетом настроек"""
+        # Проверяем глобальные настройки
+        if not SETTINGS.get("dungeon_sounds", True):
+            return  # Звуки отключены в настройках
+
+        if self.walk_sounds:
+            self.sound = random.choice(self.walk_sounds)
+            volume = random.uniform(0.2, 0.4)
+            speed = random.uniform(0.9, 1.1)
+            arcade.play_sound(self.sound, volume=volume, speed=speed)
+            print(f"Воспроизведен звук шага (dungeon_sounds={SETTINGS['dungeon_sounds']})")
 
     def _load_textures(self):
         """Загружает текстуры для блоков и фона"""
@@ -2831,16 +3181,6 @@ class GameView(arcade.View):
             print("Не удалось загрузить стандартные звуки")
             self.walk_sounds = []
 
-    def play_random_walk_sound(self):
-        """Воспроизводит случайный звук шага"""
-        if self.walk_sounds:
-            self.sound = random.choice(self.walk_sounds)
-            # Случайная громкость для разнообразия
-            volume = random.uniform(0.2, 0.4)
-            # Случайная скорость воспроизведения
-            speed = random.uniform(0.9, 1.1)
-            arcade.play_sound(self.sound, volume=volume, speed=speed)
-
     def on_update(self, delta_time):
         global LIST_POSESH
         """Обновление логики игры"""
@@ -2899,6 +3239,12 @@ class GameView(arcade.View):
             self.player_sprite.center_x = old_x
             self.player_sprite.center_y = old_y
             self.player_sprite.is_blocked = True
+
+            # Воспроизводим звук столкновения с учетом настроек
+            if (self.collision_sound and self.player_sprite.is_blocked and
+                    SETTINGS.get("dungeon_sounds", True)):
+                arcade.play_sound(self.collision_sound, volume=0.3)
+                print(f"Воспроизведен звук столкновения (dungeon_sounds={SETTINGS['dungeon_sounds']})")
 
             # Пробуем двигаться только по X
             if self.player_sprite.change_x != 0:
@@ -3494,10 +3840,6 @@ class CardGameView(arcade.View):
                                 self.defence.append([card.text, card.dict['damage'][0][0]])
                                 print(self.defence)
                                 self.defence_amount = sum([i[1] for i in self.defence])
-                        elif 'Уворот' in card.dict['effects'] and self.player and card.is_playable:
-                            if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
-                                for mob in self.mobs:
-                                    mob.is_slowed = random.randrange(card.dict['damage'][0][0], card.dict['damage'][0][1] + 1)
                         else:
                             flag = 1
                             break
@@ -3526,17 +3868,6 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
-                                    if 'Ослепление' in card.dict['effects'] and self.current_slime:
-                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
-                                            self.current_slime.is_blinded = True
-                                            damage_pos = self.current_slime.get_damage_position()
-                                            self.damage_emitter.add_damage(
-                                                damage_pos[0],
-                                                damage_pos[1],
-                                                '𖤓',
-                                                False
-                                            )
-                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     card.is_mana = True
                         else:
                             flag = 1
@@ -3574,17 +3905,6 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
-                                    if 'Ослепление' in card.dict['effects']:
-                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
-                                            mob.is_blinded = True
-                                            damage_pos = mob.get_damage_position()
-                                            self.damage_emitter.add_damage(
-                                                damage_pos[0],
-                                                damage_pos[1],
-                                                '𖤓',
-                                                False
-                                            )
-                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                     fake_mobs.remove(mob)
                                 card.is_mana = True
                         else:
@@ -3619,17 +3939,6 @@ class CardGameView(arcade.View):
                                                 False
                                             )
                                             self.damage_emitter.particles[-1].color = arcade.color.BLUE
-                                    if 'Ослепление' in card.dict['effects']:
-                                        if random.randrange(1, 101) <= int(card.dict['chance']) * 100:
-                                            mob.is_blinded = True
-                                            damage_pos = mob.get_damage_position()
-                                            self.damage_emitter.add_damage(
-                                                damage_pos[0],
-                                                damage_pos[1],
-                                                '𖤓',
-                                                False
-                                            )
-                                            self.damage_emitter.particles[-1].color = arcade.color.WHITE
                                 card.is_mana = True
                         else:
                             flag = 1
@@ -3744,27 +4053,16 @@ class CardGameView(arcade.View):
     def continue_enemy_turn(self):
         enemies = [mob for mob in self.mobs if mob.is_alive]
         for enemy in enemies:
-            if (random.randrange(1, 101) <= 60 and enemy.is_blinded) or (random.randrange(1, 101) <= enemy.is_slowed):
-                enemy.is_blinded = False
-                enemy.is_slowed = 0
-                damage = 0
-                damage_pos = self.player.get_damage_position()
-                self.damage_emitter.add_damage(
-                    damage_pos[0],
-                    damage_pos[1],
-                    'мимо',
-                    False
-                )
-                self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
-            else:
-                damage = enemy.attack()
-                damage_pos = self.player.get_damage_position()
-                self.damage_emitter.add_damage(
-                    damage_pos[0],
-                    damage_pos[1],
-                    damage,
-                    False
-                )
+            damage = enemy.attack()
+            print(f"{enemy.name} атакует игрока на {damage} урона!")
+            # Добавляем частицу урона игроку
+            damage_pos = self.player.get_damage_position()
+            self.damage_emitter.add_damage(
+                damage_pos[0],
+                damage_pos[1],
+                damage,
+                False
+            )
             if self.defence:
                 self.defence[0][1] -= damage
                 self.damage_emitter.particles[-1].color = arcade.color.LIGHT_GRAY
@@ -3966,7 +4264,10 @@ class MenuView(arcade.View):
 
                     elif btn.text == "Настройки":
                         self.status_text = "Настройки открыты"
-                        # Здесь можно добавить переход к экрану настроек
+                        # Загружаем актуальные настройки перед открытием экрана
+                        load_settings()
+                        settings_view = SettingsView(self.background_texture)
+                        self.window.show_view(settings_view)
 
                     elif btn.text == "Рейтинг":
                         top_view = TopView()
@@ -3991,6 +4292,9 @@ class MenuView(arcade.View):
 # --- Главная функция ---
 def main():
     """Главная функция"""
+    # Загружаем настройки при запуске
+    load_settings()
+
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, TITLE)
 
     background_texture = None
