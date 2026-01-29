@@ -252,3 +252,28 @@ def history_info():
     all_battles = len(cur.execute('''SELECT id FROM History''').fetchall())
     top = cur.execute('''SELECT * FROM History WHERE result = ?''', (1, )).fetchall()
     return all_battles, top
+
+
+def load_settings():
+    """Загружает настройки из файла"""
+    global SETTINGS
+    try:
+        if os.path.exists("settings.json"):
+            with open("settings.json", "r", encoding="utf-8") as f:
+                import json
+                loaded_settings = json.load(f)
+                SETTINGS.update(loaded_settings)
+                print(f"Настройки загружены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
+    except Exception as e:
+        print(f"Ошибка загрузки настроек: {e}")
+
+
+def save_settings():
+    """Сохраняет настройки в файл"""
+    try:
+        with open("settings.json", "w", encoding="utf-8") as f:
+            import json
+            json.dump(SETTINGS, f, ensure_ascii=False, indent=2)
+            print(f"Настройки сохранены: dungeon_sounds={SETTINGS['dungeon_sounds']}, game_sounds={SETTINGS['game_sounds']}")
+    except Exception as e:
+        print(f"Ошибка сохранения настроек: {e}")
