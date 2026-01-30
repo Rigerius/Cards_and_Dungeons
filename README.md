@@ -3,7 +3,7 @@
 Arcade. Архив с приложением 
 находится на диске по ссылке ниже.
 
-https://disk.yandex.ru/d/ja-h09kLC1AhKw
+https://disk.yandex.ru/d/vkGvvtWbrSIwow
 
 Рекомендуем создать ярлык на рабочем
 столе, чтобы не искать ехе-файл каждый
